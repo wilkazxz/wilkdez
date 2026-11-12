@@ -6,13 +6,23 @@ service cloud.firestore {
       return request.auth != null && request.auth.token.email in ['wilkdez@gmail.com'];
     }
     match /site/{doc} { allow read: if true; allow write: if isAdmin(); }
-    match /projects/{id} { allow read: if true; allow write: if isAdmin(); }
-    match /visits/{id} {
+    match /projects/{id} {
+      allow read: if true; allow write: if isAdmin();
+      // link file/demo/source disimpan di sini; kalau project wajib login, hanya user login yang bisa baca
+      match /priv/{d} {
+        allow read: if isAdmin() || request.auth != null
+          || get(/databases/$(database)/documents/projects/$(id)).data.caps.login != true;
+        allow write: if isAdmin();
+      }
+    }
+    // rekap trafik: 1 dokumen per hari, pengunjung hanya boleh menambah +1
+    match /stats/{day} {
       allow read: if isAdmin();
-      allow create: if request.resource.data.keys().hasOnly(['day','sid','path','t'])
-        && request.resource.data.day is string && request.resource.data.day.size() == 10
-        && request.resource.data.sid is string && request.resource.data.sid.size() < 40
-        && request.resource.data.path is string && request.resource.data.path.size() < 100;
+      allow create: if day.size() == 10 && request.resource.data.keys().hasOnly(['views','uniq'])
+        && request.resource.data.views == 1 && request.resource.data.uniq in [0,1];
+      allow update: if request.resource.data.keys().hasOnly(['views','uniq'])
+        && request.resource.data.views == resource.data.views + 1
+        && request.resource.data.uniq - resource.data.uniq in [0,1];
     }
   }
 }

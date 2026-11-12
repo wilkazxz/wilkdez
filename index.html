@@ -174,9 +174,11 @@ h1 span{display:block;background:linear-gradient(180deg,#fff 0,#8d8d8d 100%);-we
       <a href="#services">Services</a>
       <a href="#contact">Contact</a>
       <a class="btn btn-solid mob-cta" href="admin.html">Dashboard</a>
+      <button class="btn btn-ghost mob-cta authBtn" type="button">Masuk</button>
     </div>
     <a class="btn btn-ghost btn-sm" href="admin.html">Dashboard
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 11L11 3M5 3h6v6"/></svg></a>
+    <button class="btn btn-ghost btn-sm authBtn" type="button">Masuk</button>
     <button class="burger" id="burger" type="button" aria-label="Buka menu" aria-expanded="false" aria-controls="menu"><i></i><i></i><i></i></button>
   </nav>
 
@@ -234,8 +236,17 @@ h1 span{display:block;background:linear-gradient(180deg,#fff 0,#8d8d8d 100%);-we
 .pb{padding:16px;display:flex;flex-direction:column;gap:8px;flex:1}
 .pb small{color:rgba(255,255,255,.55)}.pb p{color:rgba(255,255,255,.75);font-size:.92rem;flex:1}
 .pa{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
-.pa a{padding:10px 18px;border-radius:999px;border:1px solid rgba(255,255,255,.4);font-size:.88rem}
-.pa a.s{background:#fff;color:#000}
+.pa a,.pa button{padding:10px 18px;border-radius:999px;border:1px solid rgba(255,255,255,.4);font-size:.88rem}
+body.prot input{-webkit-user-select:text;user-select:text}
+.mdl{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.7);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:16px}
+.mdl[hidden]{display:none}
+.mbox{position:relative;width:min(100%,440px);max-height:90dvh;overflow:auto;border:1px solid var(--line);border-radius:20px;background:#0a0a0a;padding:26px}
+.mbox h3{font-weight:500;margin:4px 0 12px}.mbox p{color:rgba(255,255,255,.75);margin-bottom:12px;line-height:1.5}
+.mbox input{width:100%;margin-bottom:10px;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:#111;color:#fff;font:inherit;font-size:16px}
+.mbox img{width:100%;border-radius:12px;margin-bottom:12px}
+.mx{position:absolute;top:8px;right:14px;font-size:1.6rem}
+.me{color:#ff8a8a;min-height:1em}
+.pa .s{background:#fff;color:#000}
 .pe{color:rgba(255,255,255,.55)}
 body.blur>*{filter:blur(24px)}
 body.prot{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
@@ -303,47 +314,86 @@ document.addEventListener('touchend',e=>{const n=Date.now();if(n-lastTap<350)e.p
 document.addEventListener('wheel',e=>{if(e.ctrlKey)e.preventDefault()},{passive:false});
 document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&['+','-','=','0'].includes(e.key))e.preventDefault()});
 </script>
+<div id="mdl" class="mdl" hidden><div class="mbox"><button class="mx" id="mx" type="button" aria-label="Tutup">×</button><div id="mbody"></div></div></div>
 <script type="module">
 import {firebaseConfig,configured} from './firebase-config.js';
 if(configured){
-  const A='https://www.gstatic.com/firebasejs/10.12.2/';
-  const {initializeApp}=await import(A+'firebase-app.js');
-  const {getFirestore,doc,getDoc}=await import(A+'firebase-firestore.js');
-  const db=getFirestore(initializeApp(firebaseConfig));
-  const get=async k=>{try{const r=await getDoc(doc(db,'site',k));return r.exists()?r.data():null}catch(e){return null}};
-  const [c,l,h]=await Promise.all([get('content'),get('logo'),get('hero')]);
-  const $=id=>document.getElementById(id);
-  const sg=await get('settings');
-  try{const sid=localStorage.sid||(localStorage.sid=Math.random().toString(36).slice(2)+Date.now().toString(36));
-    if(!sessionStorage.v){sessionStorage.v=1;const {collection,addDoc}=await import(A+'firebase-firestore.js');
-      const n=new Date(),dy=new Date(n-n.getTimezoneOffset()*6e4).toISOString().slice(0,10);
-      addDoc(collection(db,'visits'),{day:dy,sid,path:location.pathname.slice(0,90),t:Date.now()}).catch(()=>{})}}catch(e){}
-  try{const {collection,getDocs,query,orderBy}=await import(A+'firebase-firestore.js');
-    const ps=await getDocs(query(collection(db,'projects'),orderBy('created','desc')));
-    if(!ps.empty){const g=$('pgrid');g.innerHTML='';ps.forEach(d=>{const p=d.data(),el=document.createElement('article');el.className='pc';
-      el.innerHTML='<div class="ph"></div><div class="pb"><small></small><strong></strong><p></p><div class="pa"></div></div>';
-      if(p.cover){const im=document.createElement('img');im.alt='';im.src=p.cover;el.replaceChild(im,el.firstChild)}
-      el.querySelector('small').textContent=p.type||'';el.querySelector('strong').textContent=p.title||'';el.querySelector('p').textContent=p.desc||'';
-      if(p.url&&/^https:\/\//i.test(p.url)){const pa=el.querySelector('.pa'),o=document.createElement('a');o.href=p.url;o.target='_blank';o.rel='noopener';o.textContent='Buka';pa.appendChild(o);
-        if(p.dl){const dl=document.createElement('a');dl.href=p.url;dl.setAttribute('download','');dl.target='_blank';dl.rel='noopener';dl.className='s';dl.textContent='Unduh';pa.appendChild(dl)}}
-      g.appendChild(el)})}}catch(e){}
-  if(sg&&sg.protect){const b=document.body;b.classList.add('prot');
-    const w=document.createElement('div');w.id='wm';w.textContent=('WilkDez  ').repeat(400);b.appendChild(w);
-    const no=e=>e.preventDefault();['contextmenu','dragstart','copy','cut','selectstart'].forEach(t=>document.addEventListener(t,no));
-    document.addEventListener('keydown',e=>{const k=e.key.toLowerCase();
-      if(e.key==='PrintScreen'||e.key==='F12'||((e.ctrlKey||e.metaKey)&&['p','s','u'].includes(k))||((e.ctrlKey||e.metaKey)&&e.shiftKey&&['i','s','3','4','5'].includes(k))){e.preventDefault();try{navigator.clipboard.writeText('')}catch(_){}b.classList.add('blur');setTimeout(()=>b.classList.remove('blur'),1500)}});
-    document.addEventListener('keyup',e=>{if(e.key==='PrintScreen'){try{navigator.clipboard.writeText('')}catch(_){}}});
-    document.addEventListener('visibilitychange',()=>b.classList.toggle('blur',document.hidden));
-    addEventListener('blur',()=>b.classList.add('blur'));addEventListener('focus',()=>b.classList.remove('blur'))}
-  if(l&&l.data){const im=document.querySelector('.brand img');im.src=l.data;im.style.display='block';im.nextElementSibling.style.display='none';
-    const ic=document.createElement('link');ic.rel='icon';ic.href=l.data;document.head.appendChild(ic)}
-  if(h&&h.data)document.documentElement.style.setProperty('--img-hero','url("'+h.data+'")');
-  if(c){
-    if(c.brand){$('brandName').textContent=c.brand;document.title=c.brand+' | Developer Studio'}
-    if(c.h1a)$('h1a').textContent=c.h1a; if(c.h1b)$('h1b').textContent=c.h1b; if(c.lead)$('lead').textContent=c.lead;
-    document.querySelectorAll('.stat').forEach((e,i)=>{const s=c.stats&&c.stats[i];if(s){e.querySelector('b').textContent=s.v??s[0];e.querySelector('small').textContent=s.l??s[1]}});
-    if(c.slides&&c.slides.length===SLIDES.length){c.slides.forEach((s,i)=>SLIDES[i]={label:s.l??s[0],title:s.t??s[1],url:s.u??s[2],img:''});show(0)}
-  }
+const A='https://www.gstatic.com/firebasejs/10.12.2/',$=id=>document.getElementById(id);
+const {initializeApp}=await import(A+'firebase-app.js');
+const {getAuth,onAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,signOut}=await import(A+'firebase-auth.js');
+const {getFirestore,doc,getDoc,setDoc,onSnapshot,collection,query,orderBy,increment}=await import(A+'firebase-firestore.js');
+const app=initializeApp(firebaseConfig),db=getFirestore(app),auth=getAuth(app);
+let user=null,projects=[],protOn=false;
+
+/* ===== modal, login (opsional: tanpa login web tetap terbuka) ===== */
+const mdl=$('mdl'),openM=n=>{$('mbody').replaceChildren(n);mdl.hidden=false},closeM=()=>{mdl.hidden=true};
+$('mx').onclick=closeM;mdl.onclick=e=>{if(e.target===mdl)closeM()};
+const say=t=>{const p=document.createElement('p');p.textContent=t;openM(p)};
+function loginM(msg){const d=document.createElement('div');
+  d.innerHTML='<h3>Masuk / Daftar</h3><p class="mm"></p><input class="le" type="email" placeholder="Email" autocomplete="username"><input class="lp" type="password" placeholder="Password (min. 6)" autocomplete="current-password"><p class="me"></p><div class="pa"><button type="button" class="s lin">Masuk</button><button type="button" class="lup">Daftar</button></div>';
+  d.querySelector('.mm').textContent=msg||'Login memberi akses penuh. Tanpa login kamu tetap bisa melihat website.';
+  const go=async f=>{try{await f(auth,d.querySelector('.le').value.trim(),d.querySelector('.lp').value);closeM()}
+    catch(e){d.querySelector('.me').textContent=e.code==='auth/email-already-in-use'?'Email sudah terdaftar, silakan Masuk':e.code==='auth/weak-password'?'Password minimal 6 karakter':'Email atau password salah'}};
+  d.querySelector('.lin').onclick=()=>go(signInWithEmailAndPassword);d.querySelector('.lup').onclick=()=>go(createUserWithEmailAndPassword);openM(d)}
+document.querySelectorAll('.authBtn').forEach(b=>b.onclick=()=>user?signOut(auth):loginM());
+onAuthStateChanged(auth,u=>{user=u;document.querySelectorAll('.authBtn').forEach(b=>b.textContent=u?'Keluar':'Masuk');render();wm()});
+
+/* ===== hitung kunjungan (hemat kuota: 1 dokumen per hari) ===== */
+try{const n=new Date(),dy=new Date(n-n.getTimezoneOffset()*6e4).toISOString().slice(0,10);
+  if(!sessionStorage.v){sessionStorage.v=1;const first=localStorage.vd!==dy;localStorage.vd=dy;
+    setDoc(doc(db,'stats',dy),{views:increment(1),uniq:increment(first?1:0)},{merge:true}).catch(()=>{})}}catch(e){}
+
+/* ===== proteksi (hidup/mati realtime dari admin) ===== */
+function wm(){const b=document.body,w=$('wm');b.classList.toggle('prot',protOn);
+  if(!protOn){w&&w.remove();return}
+  const id=user?user.email:(localStorage.sid||(localStorage.sid=Math.random().toString(36).slice(2,8))),t=('WilkDez · '+id+'     ').repeat(300);
+  if(w)w.textContent=t;else{const e=document.createElement('div');e.id='wm';e.textContent=t;b.appendChild(e)}}
+const no=e=>{if(protOn&&!(e.target.closest&&e.target.closest('input')))e.preventDefault()};
+['contextmenu','dragstart','copy','cut','selectstart'].forEach(t=>document.addEventListener(t,no));
+const blur=()=>{document.body.classList.add('blur');setTimeout(()=>document.body.classList.remove('blur'),1500)};
+document.addEventListener('keydown',e=>{if(!protOn)return;const k=e.key.toLowerCase();
+  if(e.key==='PrintScreen'||e.key==='F12'||((e.ctrlKey||e.metaKey)&&['p','s','u'].includes(k))||((e.ctrlKey||e.metaKey)&&e.shiftKey&&['i','s','3','4','5'].includes(k))){e.preventDefault();try{navigator.clipboard.writeText('')}catch(_){}blur()}});
+document.addEventListener('keyup',e=>{if(protOn&&e.key==='PrintScreen'){try{navigator.clipboard.writeText('')}catch(_){}}});
+document.addEventListener('visibilitychange',()=>protOn&&document.body.classList.toggle('blur',document.hidden));
+addEventListener('blur',()=>protOn&&document.body.classList.add('blur'));addEventListener('focus',()=>document.body.classList.remove('blur'));
+
+/* ===== project: tampil + tombol sesuai capabilities ===== */
+function detail(q,c){const d=document.createElement('div');d.innerHTML='<small></small><h3></h3><p></p>';
+  d.querySelector('small').textContent=q.type||'';d.querySelector('h3').textContent=q.title||'';d.querySelector('p').textContent=q.desc||'';
+  if(q.cover&&c.preview!==false){const im=new Image();im.alt='';im.src=q.cover;d.prepend(im)}openM(d)}
+function render(){const g=$('pgrid');
+  if(!projects.length){g.innerHTML='<p class="pe">Belum ada project.</p>';return}
+  g.replaceChildren(...projects.map(q=>{
+    const c=q.caps||{dl:!!q.dl,details:true,preview:true},lock=!!c.login&&!user,el=document.createElement('article');el.className='pc';
+    el.innerHTML='<div class="ph"></div><div class="pb"><small></small><strong></strong><p></p><div class="pa"></div></div>';
+    if(q.cover&&c.preview!==false){const im=new Image();im.alt='';im.src=q.cover;el.firstChild.replaceWith(im)}
+    else if(q.cover)el.firstChild.textContent='🔒 Preview dinonaktifkan';
+    el.querySelector('small').textContent=q.type||'';el.querySelector('strong').textContent=q.title||'';
+    el.querySelector('p').textContent=c.details!==false?(q.desc||''):'';
+    const pa=el.querySelector('.pa'),add=(t,cls,fn,lk)=>{const b=document.createElement('button');b.type='button';b.className=cls||'';b.textContent=(lk&&lock?'🔒 ':'')+t;b.onclick=fn;pa.appendChild(b)};
+    const link=async k=>{if(!q.caps)return q.url;const s=await getDoc(doc(db,'projects',q.id,'priv','links'));return s.exists()?s.data()[k]:''};
+    const go=async k=>{if(c.login&&!user)return loginM('Project ini butuh login.');
+      const w=open('','_blank');
+      try{const u=await link(k);if(u&&/^https:\/\//i.test(u)){if(w){w.opener=null;w.location=u}else location.href=u}else{w&&w.close();say('Link belum tersedia.')}}
+      catch(e){w&&w.close();loginM('Login dulu untuk membuka ini.')}};
+    if(c.details!==false)add('Detail','',()=>detail(q,c));
+    if(c.demo)add('Live demo','',()=>go('demo'),1);
+    if(c.src)add('Source code','',()=>go('src'),1);
+    if(c.dl)add('Unduh','s',()=>go('file'),1);
+    return el}))}
+
+/* ===== data realtime: berubah di admin, langsung berubah di sini ===== */
+const on=(k,f)=>onSnapshot(doc(db,'site',k),s=>s.exists()&&f(s.data()),()=>{});
+on('settings',s=>{protOn=!!s.protect;wm()});
+on('logo',l=>{if(!l.data)return;const im=document.querySelector('.brand img');im.src=l.data;im.style.display='block';im.nextElementSibling.style.display='none';
+  let ic=document.querySelector('link[rel=icon]');if(!ic){ic=document.createElement('link');ic.rel='icon';document.head.appendChild(ic)}ic.href=l.data});
+on('hero',h=>{if(h.data)document.documentElement.style.setProperty('--img-hero','url("'+h.data+'")')});
+on('content',c=>{
+  if(c.brand){$('brandName').textContent=c.brand;document.title=c.brand+' | Developer Studio'}
+  if(c.h1a)$('h1a').textContent=c.h1a; if(c.h1b)$('h1b').textContent=c.h1b; if(c.lead)$('lead').textContent=c.lead;
+  document.querySelectorAll('.stat').forEach((e,i)=>{const s=c.stats&&c.stats[i];if(s){e.querySelector('b').textContent=s.v??s[0];e.querySelector('small').textContent=s.l??s[1]}});
+  if(c.slides&&c.slides.length===SLIDES.length){c.slides.forEach((s,i)=>SLIDES[i]={label:s.l??s[0],title:s.t??s[1],url:s.u??s[2],img:''});show(0)}});
+onSnapshot(query(collection(db,'projects'),orderBy('created','desc')),s=>{projects=s.docs.map(d=>({id:d.id,...d.data()}));render()},()=>{});
 }
 </script>
 </body>

@@ -36,6 +36,15 @@ input:focus,textarea:focus{outline:2px solid #fff;outline-offset:1px}
 .chk{display:flex;align-items:center;gap:10px;margin-top:14px;color:#fff;font-size:.95rem}.chk input{width:auto}
 select{width:100%;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.25);background:#0b0b0b;color:#fff;font:inherit;font-size:16px}
 small{color:rgba(255,255,255,.5)}
+.cap{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:12px 0}
+.cap b{display:block;font-weight:500}
+.sw{position:relative;width:54px;height:32px;flex-shrink:0}
+.sw input{position:absolute;inset:0;opacity:0;width:100%;height:100%;margin:0;padding:0;border:0;cursor:pointer;z-index:1}
+.sw i{position:absolute;inset:0;border-radius:99px;background:#777;transition:.2s}
+.sw i::after{content:"";position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:50%;background:#fff;transition:.2s}
+.sw input:checked+i{background:#16a34a}
+.sw input:checked+i::after{transform:translateX(22px)}
+.chips{display:flex;flex-wrap:wrap;gap:0 16px}.chips .chk{margin-top:8px;font-size:.82rem}
 </style>
 </head>
 <body>
@@ -59,14 +68,18 @@ small{color:rgba(255,255,255,.5)}
     <label class="chk"><input type="checkbox" id="prot"> Aktifkan proteksi (blokir klik kanan, salin, cetak, PrintScreen, dan beri watermark)</label>
     <p style="margin-top:10px"><small>Ini hanya penghalang, bukan jaminan. Screenshot dan rekam layar dari HP atau kamera tidak bisa diblokir oleh website mana pun. Jangan upload file yang tidak boleh bocor.</small></p></div>
 
-  <div class="card"><h2>Project</h2>
+  <div class="card"><h2>Upload project</h2>
+    <div style="text-align:center;padding:4px 0 14px"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18a4 4 0 01-.5-7.97A5.5 5.5 0 0117 8.5a4.5 4.5 0 01.5 9"/><path d="M12 12v8M9 15l3-3 3 3"/></svg>
+      <b style="display:block;margin-top:6px">Upload project files</b><small>Tempel link ZIP, source code, dokumentasi, dan aset (Drive, GitHub, dll)</small></div>
     <div class="grid"><div><label for="ptitle">Judul</label><input id="ptitle" maxlength="60"></div>
     <div><label for="ptype">Jenis</label><select id="ptype"><option>Web</option><option>Foto</option><option>Video</option><option>File</option></select></div></div>
     <label for="pdesc">Deskripsi</label><textarea id="pdesc" maxlength="300"></textarea>
     <label for="pcover">Foto sampul (pilih dari galeri)</label><input id="pcover" type="file" accept="image/*">
     <div class="prev"><img id="pcoverP" alt=""></div>
-    <label for="purl">Link file / video / demo (https://...)</label><input id="purl" placeholder="https://...">
-    <label class="chk"><input type="checkbox" id="pdl"> Izinkan pengunjung mengunduh</label>
+    <label for="pfile">Link file / ZIP (untuk Download)</label><input id="pfile" placeholder="https://...">
+    <label for="pdemo">Link live demo</label><input id="pdemo" placeholder="https://...">
+    <label for="psrc">Link source code</label><input id="psrc" placeholder="https://...">
+    <h2 style="margin-top:24px">Project capabilities</h2><div id="caps"></div>
     <p style="margin-top:16px"><button class="btn" id="padd">Tambah project</button></p>
     <div id="plist"></div></div>
 
@@ -93,6 +106,7 @@ small{color:rgba(255,255,255,.5)}
 
 <script type="module">
 import {firebaseConfig,configured} from './firebase-config.js';
+const ADMINS=['wilkdez@gmail.com'];  // samakan dengan firestore.rules
 const $=id=>document.getElementById(id);
 const note=(t)=>{const m=$('msg');m.textContent=t;m.style.display='block';clearTimeout(note.t);note.t=setTimeout(()=>m.style.display='none',4500)};
 if(!configured){note('Isi dulu firebase-config.js dengan data Firebase kamu.');}
@@ -100,7 +114,7 @@ else{
 const A='https://www.gstatic.com/firebasejs/10.12.2/';
 const {initializeApp}=await import(A+'firebase-app.js');
 const {getAuth,signInWithEmailAndPassword,signOut,onAuthStateChanged}=await import(A+'firebase-auth.js');
-const {getFirestore,doc,getDoc,setDoc,collection,addDoc,getDocs,deleteDoc,updateDoc,query,where,orderBy,limit}=await import(A+'firebase-firestore.js');
+const {getFirestore,doc,getDoc,setDoc,collection,addDoc,getDocs,deleteDoc,updateDoc,query,where,orderBy,limit,onSnapshot,documentId}=await import(A+'firebase-firestore.js');
 const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app);
 
 // form dinamis
@@ -137,42 +151,52 @@ $('save').onclick=async()=>{
       stats:[0,1,2].map(i=>({v:v('sv'+i),l:v('sl'+i)})),slides:[0,1,2,3].map(i=>({l:v('pl'+i),t:v('pt'+i),u:safeUrl(v('pu'+i))}))});
     if(pend.logo)await setDoc(doc(db,'site','logo'),{data:pend.logo});
     if(pend.hero)await setDoc(doc(db,'site','hero'),{data:pend.hero});
-    note('Tersimpan. Refresh website untuk melihat hasilnya.');
+    note('Tersimpan. Website ikut berubah otomatis.');
   }catch(e){note('Gagal menyimpan: '+(e.code==='permission-denied'?'akun ini bukan admin (cek firestore.rules)':e.message))}
   b.disabled=false};
 
 const day=d=>new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10);
-async function loadTraffic(){try{
+let unT;
+function loadTraffic(){unT&&unT();
   const days=[...Array(7)].map((_,i)=>day(new Date(Date.now()-(6-i)*864e5)));
-  const s=await getDocs(query(collection(db,'visits'),where('day','>=',days[0]),limit(5000)));
-  const by={},sid=new Set();s.forEach(d=>{const x=d.data();by[x.day]=(by[x.day]||0)+1;sid.add(x.sid)});
-  const mx=Math.max(1,...days.map(d=>by[d]||0)),n=d=>by[d]||0;
-  $('tr').innerHTML=`<div class="grid"><div><label>Hari ini</label><b class="big">${n(days[6])}</b></div><div><label>Kunjungan 7 hari</label><b class="big">${s.size}</b></div><div><label>Pengunjung unik 7 hari</label><b class="big">${sid.size}</b></div></div><div class="bars">`+days.map(d=>`<div><small>${n(d)}</small><i style="height:${n(d)/mx*80}%"></i><small>${d.slice(5)}</small></div>`).join('')+'</div>'}
-  catch(e){$('tr').textContent='Gagal memuat trafik: '+e.message}}
+  unT=onSnapshot(query(collection(db,'stats'),where(documentId(),'>=',days[0])),s=>{
+    const by={};let tv=0,tu=0;s.forEach(d=>{const x=d.data();by[d.id]=x.views||0;tv+=x.views||0;tu+=x.uniq||0});
+    const n=d=>by[d]||0,mx=Math.max(1,...days.map(n));
+    $('tr').innerHTML=`<div class="grid"><div><label>Hari ini</label><b class="big">${n(days[6])}</b></div><div><label>Kunjungan 7 hari</label><b class="big">${tv}</b></div><div><label>Pengunjung unik (total harian)</label><b class="big">${tu}</b></div></div><div class="bars">`+days.map(d=>`<div><small>${n(d)}</small><i style="height:${n(d)/mx*80}%"></i><small>${d.slice(5)}</small></div>`).join('')+'</div>'},
+    e=>{$('tr').textContent='Gagal memuat trafik: '+e.message})}
 $('trR').onclick=loadTraffic;
 $('prot').onchange=async()=>{try{await setDoc(doc(db,'site','settings'),{protect:$('prot').checked});note($('prot').checked?'Proteksi AKTIF':'Proteksi nonaktif')}catch(e){note('Gagal: '+e.message)}};
 let pc='';
 $('pcover').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{pc=await shrink(f,900,'image/jpeg',.8);$('pcoverP').src=pc}catch(err){note(err.message||'Gagal membaca gambar')}};
-async function loadProj(){try{
-  const s=await getDocs(query(collection(db,'projects'),orderBy('created','desc')));$('plist').innerHTML='';
-  s.forEach(d=>{const p=d.data(),r=document.createElement('div');r.className='sl';
-    r.innerHTML='<div class="prev">'+(p.cover?'<img alt="">':'')+'<div style="flex:1;min-width:140px"><b></b><br><small></small></div><label class="chk" style="margin:0"><input type="checkbox"> Unduh</label><button class="btn o">Hapus</button></div>';
-    if(p.cover)r.querySelector('img').src=p.cover;
-    r.querySelector('b').textContent=p.title;r.querySelector('small').textContent=p.type+(p.url?' · '+p.url:'');
-    const c=r.querySelector('input');c.checked=!!p.dl;
-    c.onchange=async()=>{try{await updateDoc(doc(db,'projects',d.id),{dl:c.checked});note('Diperbarui')}catch(e){note('Gagal: '+e.message)}};
-    r.querySelector('button').onclick=async()=>{if(confirm('Hapus project ini?')){await deleteDoc(doc(db,'projects',d.id));loadProj()}};
-    $('plist').appendChild(r)})}catch(e){$('plist').textContent='Gagal memuat project: '+e.message}}
+const CAPS=[['dl','Download project','Pengunjung boleh mengunduh file',1],['details','View project details','Detail proyek bisa dilihat publik',1],['demo','Live demo','Tampilkan tombol demo website',1],['src','Show source code','Tampilkan akses source code',0],['preview','Allow public preview','Izinkan preview aset proyek',1],['login','Require user login','Wajib login untuk akses tertentu',0]];
+$('caps').innerHTML=CAPS.map(([k,t,s,on])=>`<div class="cap"><div><b>${t}</b><small>${s}</small></div><label class="sw"><input type="checkbox" id="c_${k}" ${on?'checked':''}><i></i></label></div>`).join('');
+let unP;
+function loadProj(){unP&&unP();
+  unP=onSnapshot(query(collection(db,'projects'),orderBy('created','desc')),s=>{$('plist').innerHTML='';
+    s.forEach(d=>{const p=d.data(),c=p.caps||{},r=document.createElement('div');r.className='sl';
+      r.innerHTML='<div class="prev">'+(p.cover?'<img alt="">':'')+'<div style="flex:1;min-width:140px"><b></b><br><small></small></div><button class="btn o">Hapus</button></div><div class="chips"></div>';
+      if(p.cover)r.querySelector('img').src=p.cover;
+      r.querySelector('b').textContent=p.title;r.querySelector('small').textContent=p.type||'';
+      CAPS.forEach(([k,t])=>{const l=document.createElement('label');l.className='chk';l.innerHTML='<input type="checkbox">';l.append(' '+t);const i=l.firstChild;i.checked=!!c[k];
+        i.onchange=()=>updateDoc(doc(db,'projects',d.id),{['caps.'+k]:i.checked}).then(()=>note('Diperbarui')).catch(e=>note('Gagal: '+e.message));
+        r.querySelector('.chips').appendChild(l)});
+      r.querySelector('button').onclick=async()=>{if(confirm('Hapus project ini?')){try{await deleteDoc(doc(db,'projects',d.id,'priv','links'))}catch(e){}await deleteDoc(doc(db,'projects',d.id))}};
+      $('plist').appendChild(r)})},e=>{$('plist').textContent='Gagal memuat project: '+e.message})}
 $('padd').onclick=async()=>{const t=$('ptitle').value.trim();if(!t)return note('Isi judul dulu');
-  const u=$('purl').value.trim();if(u&&!/^https:\/\//i.test(u))return note('Link harus diawali https://');
-  try{await addDoc(collection(db,'projects'),{title:t,desc:$('pdesc').value.trim(),type:$('ptype').value,url:u,cover:pc,dl:$('pdl').checked,created:Date.now()});
-    ['ptitle','pdesc','purl','pcover'].forEach(i=>$(i).value='');$('pdl').checked=false;$('pcoverP').removeAttribute('src');pc='';note('Project ditambahkan');loadProj()}
+  const L={file:$('pfile').value.trim(),demo:$('pdemo').value.trim(),src:$('psrc').value.trim()};
+  if(Object.values(L).some(u=>u&&!/^https:\/\//i.test(u)))return note('Semua link harus diawali https://');
+  const caps={};CAPS.forEach(([k])=>caps[k]=$('c_'+k).checked);
+  try{const r=await addDoc(collection(db,'projects'),{title:t,desc:$('pdesc').value.trim(),type:$('ptype').value,cover:pc,caps,created:Date.now()});
+    await setDoc(doc(db,'projects',r.id,'priv','links'),L);
+    ['ptitle','pdesc','pfile','pdemo','psrc','pcover'].forEach(i=>$(i).value='');$('pcoverP').removeAttribute('src');pc='';note('Project ditambahkan')}
   catch(e){note('Gagal: '+(e.code==='permission-denied'?'akun ini bukan admin (cek firestore.rules)':e.message))}};
 async function loadExtra(){const s=await get('settings');$('prot').checked=!!(s&&s.protect);loadTraffic();loadProj()}
 $('go').onclick=async()=>{try{await signInWithEmailAndPassword(auth,$('em').value.trim(),$('pw').value)}catch(e){note('Email atau password salah')}};
 $('pw').onkeydown=e=>{if(e.key==='Enter')$('go').click()};
 $('out').onclick=()=>signOut(auth);
-onAuthStateChanged(auth,u=>{$('login').classList.toggle('hide',!!u);$('panel').classList.toggle('hide',!u);if(u){load();loadExtra()}});
+onAuthStateChanged(auth,u=>{const ok=!!u&&ADMINS.includes((u.email||'').toLowerCase());
+  if(u&&!ok){note('Akun ini bukan admin');signOut(auth)}
+  $('login').classList.toggle('hide',ok);$('panel').classList.toggle('hide',!ok);if(ok){load();loadExtra()}});
 }
 // anti zoom
 ['gesturestart','gesturechange'].forEach(t=>document.addEventListener(t,e=>e.preventDefault()));
