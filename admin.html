@@ -29,6 +29,12 @@ input:focus,textarea:focus{outline:2px solid #fff;outline-offset:1px}
 #msg{position:fixed;left:16px;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));max-width:520px;margin:auto;padding:14px 18px;border-radius:14px;background:#fff;color:#000;font-size:.9rem;display:none;z-index:9}
 #login{max-width:400px;margin:12vh auto 0}
 .hide{display:none!important}
+.big{display:block;font-size:1.9rem;font-weight:600}
+.bars{display:flex;gap:8px;align-items:flex-end;height:110px;margin-top:16px}
+.bars div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:2px}
+.bars i{display:block;width:100%;background:#fff;border-radius:6px 6px 0 0;min-height:2px}
+.chk{display:flex;align-items:center;gap:10px;margin-top:14px;color:#fff;font-size:.95rem}.chk input{width:auto}
+select{width:100%;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.25);background:#0b0b0b;color:#fff;font:inherit;font-size:16px}
 small{color:rgba(255,255,255,.5)}
 </style>
 </head>
@@ -45,6 +51,24 @@ small{color:rgba(255,255,255,.5)}
   <header><h1>Dashboard WilkDez</h1>
     <div><a class="btn o" href="index.html" style="display:inline-flex;align-items:center;text-decoration:none" target="_blank">Lihat website</a>
     <button class="btn o" id="out">Keluar</button></div></header>
+
+  <div class="card"><h2>Trafik pengunjung</h2><div id="tr"><small>Memuat...</small></div>
+    <p style="margin-top:14px"><button class="btn o" id="trR">Muat ulang</button></p></div>
+
+  <div class="card"><h2>Proteksi konten</h2>
+    <label class="chk"><input type="checkbox" id="prot"> Aktifkan proteksi (blokir klik kanan, salin, cetak, PrintScreen, dan beri watermark)</label>
+    <p style="margin-top:10px"><small>Ini hanya penghalang, bukan jaminan. Screenshot dan rekam layar dari HP atau kamera tidak bisa diblokir oleh website mana pun. Jangan upload file yang tidak boleh bocor.</small></p></div>
+
+  <div class="card"><h2>Project</h2>
+    <div class="grid"><div><label for="ptitle">Judul</label><input id="ptitle" maxlength="60"></div>
+    <div><label for="ptype">Jenis</label><select id="ptype"><option>Web</option><option>Foto</option><option>Video</option><option>File</option></select></div></div>
+    <label for="pdesc">Deskripsi</label><textarea id="pdesc" maxlength="300"></textarea>
+    <label for="pcover">Foto sampul (pilih dari galeri)</label><input id="pcover" type="file" accept="image/*">
+    <div class="prev"><img id="pcoverP" alt=""></div>
+    <label for="purl">Link file / video / demo (https://...)</label><input id="purl" placeholder="https://...">
+    <label class="chk"><input type="checkbox" id="pdl"> Izinkan pengunjung mengunduh</label>
+    <p style="margin-top:16px"><button class="btn" id="padd">Tambah project</button></p>
+    <div id="plist"></div></div>
 
   <div class="card"><h2>Branding</h2>
     <label for="brand">Nama website</label><input id="brand" maxlength="40">
@@ -76,7 +100,7 @@ else{
 const A='https://www.gstatic.com/firebasejs/10.12.2/';
 const {initializeApp}=await import(A+'firebase-app.js');
 const {getAuth,signInWithEmailAndPassword,signOut,onAuthStateChanged}=await import(A+'firebase-auth.js');
-const {getFirestore,doc,getDoc,setDoc}=await import(A+'firebase-firestore.js');
+const {getFirestore,doc,getDoc,setDoc,collection,addDoc,getDocs,deleteDoc,updateDoc,query,where,orderBy,limit}=await import(A+'firebase-firestore.js');
 const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app);
 
 // form dinamis
@@ -117,10 +141,38 @@ $('save').onclick=async()=>{
   }catch(e){note('Gagal menyimpan: '+(e.code==='permission-denied'?'akun ini bukan admin (cek firestore.rules)':e.message))}
   b.disabled=false};
 
+const day=d=>new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10);
+async function loadTraffic(){try{
+  const days=[...Array(7)].map((_,i)=>day(new Date(Date.now()-(6-i)*864e5)));
+  const s=await getDocs(query(collection(db,'visits'),where('day','>=',days[0]),limit(5000)));
+  const by={},sid=new Set();s.forEach(d=>{const x=d.data();by[x.day]=(by[x.day]||0)+1;sid.add(x.sid)});
+  const mx=Math.max(1,...days.map(d=>by[d]||0)),n=d=>by[d]||0;
+  $('tr').innerHTML=`<div class="grid"><div><label>Hari ini</label><b class="big">${n(days[6])}</b></div><div><label>Kunjungan 7 hari</label><b class="big">${s.size}</b></div><div><label>Pengunjung unik 7 hari</label><b class="big">${sid.size}</b></div></div><div class="bars">`+days.map(d=>`<div><small>${n(d)}</small><i style="height:${n(d)/mx*80}%"></i><small>${d.slice(5)}</small></div>`).join('')+'</div>'}
+  catch(e){$('tr').textContent='Gagal memuat trafik: '+e.message}}
+$('trR').onclick=loadTraffic;
+$('prot').onchange=async()=>{try{await setDoc(doc(db,'site','settings'),{protect:$('prot').checked});note($('prot').checked?'Proteksi AKTIF':'Proteksi nonaktif')}catch(e){note('Gagal: '+e.message)}};
+let pc='';
+$('pcover').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{pc=await shrink(f,900,'image/jpeg',.8);$('pcoverP').src=pc}catch(err){note(err.message||'Gagal membaca gambar')}};
+async function loadProj(){try{
+  const s=await getDocs(query(collection(db,'projects'),orderBy('created','desc')));$('plist').innerHTML='';
+  s.forEach(d=>{const p=d.data(),r=document.createElement('div');r.className='sl';
+    r.innerHTML='<div class="prev">'+(p.cover?'<img alt="">':'')+'<div style="flex:1;min-width:140px"><b></b><br><small></small></div><label class="chk" style="margin:0"><input type="checkbox"> Unduh</label><button class="btn o">Hapus</button></div>';
+    if(p.cover)r.querySelector('img').src=p.cover;
+    r.querySelector('b').textContent=p.title;r.querySelector('small').textContent=p.type+(p.url?' · '+p.url:'');
+    const c=r.querySelector('input');c.checked=!!p.dl;
+    c.onchange=async()=>{try{await updateDoc(doc(db,'projects',d.id),{dl:c.checked});note('Diperbarui')}catch(e){note('Gagal: '+e.message)}};
+    r.querySelector('button').onclick=async()=>{if(confirm('Hapus project ini?')){await deleteDoc(doc(db,'projects',d.id));loadProj()}};
+    $('plist').appendChild(r)})}catch(e){$('plist').textContent='Gagal memuat project: '+e.message}}
+$('padd').onclick=async()=>{const t=$('ptitle').value.trim();if(!t)return note('Isi judul dulu');
+  const u=$('purl').value.trim();if(u&&!/^https:\/\//i.test(u))return note('Link harus diawali https://');
+  try{await addDoc(collection(db,'projects'),{title:t,desc:$('pdesc').value.trim(),type:$('ptype').value,url:u,cover:pc,dl:$('pdl').checked,created:Date.now()});
+    ['ptitle','pdesc','purl','pcover'].forEach(i=>$(i).value='');$('pdl').checked=false;$('pcoverP').removeAttribute('src');pc='';note('Project ditambahkan');loadProj()}
+  catch(e){note('Gagal: '+(e.code==='permission-denied'?'akun ini bukan admin (cek firestore.rules)':e.message))}};
+async function loadExtra(){const s=await get('settings');$('prot').checked=!!(s&&s.protect);loadTraffic();loadProj()}
 $('go').onclick=async()=>{try{await signInWithEmailAndPassword(auth,$('em').value.trim(),$('pw').value)}catch(e){note('Email atau password salah')}};
 $('pw').onkeydown=e=>{if(e.key==='Enter')$('go').click()};
 $('out').onclick=()=>signOut(auth);
-onAuthStateChanged(auth,u=>{$('login').classList.toggle('hide',!!u);$('panel').classList.toggle('hide',!u);if(u)load()});
+onAuthStateChanged(auth,u=>{$('login').classList.toggle('hide',!!u);$('panel').classList.toggle('hide',!u);if(u){load();loadExtra()}});
 }
 // anti zoom
 ['gesturestart','gesturechange'].forEach(t=>document.addEventListener(t,e=>e.preventDefault()));

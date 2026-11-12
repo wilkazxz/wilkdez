@@ -221,6 +221,28 @@ h1 span{display:block;background:linear-gradient(180deg,#fff 0,#8d8d8d 100%);-we
   </div>
 </header>
 
+<section id="projects" class="pj">
+  <h2>Projects</h2>
+  <div class="pgrid" id="pgrid"><p class="pe">Belum ada project.</p></div>
+</section>
+<style>
+.pj{padding:80px var(--pad);max-width:1200px;margin:0 auto}
+.pj h2{font-size:clamp(1.6rem,4vw,2.4rem);font-weight:500;margin-bottom:28px}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:20px}
+.pc{border:1px solid rgba(255,255,255,.2);border-radius:20px;overflow:hidden;background:rgba(255,255,255,.04);display:flex;flex-direction:column}
+.pc img,.pc .ph{width:100%;aspect-ratio:16/10;object-fit:cover;background:linear-gradient(135deg,#777,#111)}
+.pb{padding:16px;display:flex;flex-direction:column;gap:8px;flex:1}
+.pb small{color:rgba(255,255,255,.55)}.pb p{color:rgba(255,255,255,.75);font-size:.92rem;flex:1}
+.pa{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+.pa a{padding:10px 18px;border-radius:999px;border:1px solid rgba(255,255,255,.4);font-size:.88rem}
+.pa a.s{background:#fff;color:#000}
+.pe{color:rgba(255,255,255,.55)}
+body.blur>*{filter:blur(24px)}
+body.prot{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+body.prot img{-webkit-user-drag:none;pointer-events:none}
+#wm{position:fixed;inset:0;z-index:99;pointer-events:none;overflow:hidden;opacity:.07;font-size:14px;line-height:90px;transform:rotate(-20deg) scale(1.6);white-space:pre-wrap;word-break:break-all}
+@media print{body.prot{display:none}}
+</style>
 <script>
 /* ===== DATA SPOTLIGHT (nanti diganti data dari database) ===== */
 var SLIDES = [
@@ -291,6 +313,28 @@ if(configured){
   const get=async k=>{try{const r=await getDoc(doc(db,'site',k));return r.exists()?r.data():null}catch(e){return null}};
   const [c,l,h]=await Promise.all([get('content'),get('logo'),get('hero')]);
   const $=id=>document.getElementById(id);
+  const sg=await get('settings');
+  try{const sid=localStorage.sid||(localStorage.sid=Math.random().toString(36).slice(2)+Date.now().toString(36));
+    if(!sessionStorage.v){sessionStorage.v=1;const {collection,addDoc}=await import(A+'firebase-firestore.js');
+      const n=new Date(),dy=new Date(n-n.getTimezoneOffset()*6e4).toISOString().slice(0,10);
+      addDoc(collection(db,'visits'),{day:dy,sid,path:location.pathname.slice(0,90),t:Date.now()}).catch(()=>{})}}catch(e){}
+  try{const {collection,getDocs,query,orderBy}=await import(A+'firebase-firestore.js');
+    const ps=await getDocs(query(collection(db,'projects'),orderBy('created','desc')));
+    if(!ps.empty){const g=$('pgrid');g.innerHTML='';ps.forEach(d=>{const p=d.data(),el=document.createElement('article');el.className='pc';
+      el.innerHTML='<div class="ph"></div><div class="pb"><small></small><strong></strong><p></p><div class="pa"></div></div>';
+      if(p.cover){const im=document.createElement('img');im.alt='';im.src=p.cover;el.replaceChild(im,el.firstChild)}
+      el.querySelector('small').textContent=p.type||'';el.querySelector('strong').textContent=p.title||'';el.querySelector('p').textContent=p.desc||'';
+      if(p.url&&/^https:\/\//i.test(p.url)){const pa=el.querySelector('.pa'),o=document.createElement('a');o.href=p.url;o.target='_blank';o.rel='noopener';o.textContent='Buka';pa.appendChild(o);
+        if(p.dl){const dl=document.createElement('a');dl.href=p.url;dl.setAttribute('download','');dl.target='_blank';dl.rel='noopener';dl.className='s';dl.textContent='Unduh';pa.appendChild(dl)}}
+      g.appendChild(el)})}}catch(e){}
+  if(sg&&sg.protect){const b=document.body;b.classList.add('prot');
+    const w=document.createElement('div');w.id='wm';w.textContent=('WilkDez  ').repeat(400);b.appendChild(w);
+    const no=e=>e.preventDefault();['contextmenu','dragstart','copy','cut','selectstart'].forEach(t=>document.addEventListener(t,no));
+    document.addEventListener('keydown',e=>{const k=e.key.toLowerCase();
+      if(e.key==='PrintScreen'||e.key==='F12'||((e.ctrlKey||e.metaKey)&&['p','s','u'].includes(k))||((e.ctrlKey||e.metaKey)&&e.shiftKey&&['i','s','3','4','5'].includes(k))){e.preventDefault();try{navigator.clipboard.writeText('')}catch(_){}b.classList.add('blur');setTimeout(()=>b.classList.remove('blur'),1500)}});
+    document.addEventListener('keyup',e=>{if(e.key==='PrintScreen'){try{navigator.clipboard.writeText('')}catch(_){}}});
+    document.addEventListener('visibilitychange',()=>b.classList.toggle('blur',document.hidden));
+    addEventListener('blur',()=>b.classList.add('blur'));addEventListener('focus',()=>b.classList.remove('blur'))}
   if(l&&l.data){const im=document.querySelector('.brand img');im.src=l.data;im.style.display='block';im.nextElementSibling.style.display='none';
     const ic=document.createElement('link');ic.rel='icon';ic.href=l.data;document.head.appendChild(ic)}
   if(h&&h.data)document.documentElement.style.setProperty('--img-hero','url("'+h.data+'")');

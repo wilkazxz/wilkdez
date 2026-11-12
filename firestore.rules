@@ -1,11 +1,18 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /site/{doc} {
-      allow read: if true;
-      // GANTI dengan 2 email admin kamu
-      allow write: if request.auth != null
-        && request.auth.token.email in ['EMAIL_ADMIN_1@gmail.com','EMAIL_ADMIN_2@gmail.com'];
+    function isAdmin() {
+      // Tambahkan email admin kedua di dalam [ ] kalau sudah ada
+      return request.auth != null && request.auth.token.email in ['wilkdez@gmail.com'];
+    }
+    match /site/{doc} { allow read: if true; allow write: if isAdmin(); }
+    match /projects/{id} { allow read: if true; allow write: if isAdmin(); }
+    match /visits/{id} {
+      allow read: if isAdmin();
+      allow create: if request.resource.data.keys().hasOnly(['day','sid','path','t'])
+        && request.resource.data.day is string && request.resource.data.day.size() == 10
+        && request.resource.data.sid is string && request.resource.data.sid.size() < 40
+        && request.resource.data.path is string && request.resource.data.path.size() < 100;
     }
   }
 }
