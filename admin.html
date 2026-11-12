@@ -101,8 +101,8 @@ async function load(){
   $('lead').value=c.lead||'We craft digital experiences, build innovative solutions, and turn ideas into reality.';
   const st=c.stats||[['50+','Projects Delivered'],['10K+','Happy Users'],['99.9%','Uptime']];
   const sl=c.slides||[['New Project','Next-Gen Platform','#projects'],['Featured','Studio Dashboard','#projects'],['Open Source','WilkDez UI Kit','#projects'],['Coming Soon','Mobile Companion','#projects']];
-  st.forEach((s,i)=>{$('sv'+i).value=s[0];$('sl'+i).value=s[1]});
-  sl.forEach((s,i)=>{$('pl'+i).value=s[0];$('pt'+i).value=s[1];$('pu'+i).value=s[2]});
+  st.forEach((s,i)=>{$('sv'+i).value=s.v??s[0]??'';$('sl'+i).value=s.l??s[1]??''});
+  sl.forEach((s,i)=>{$('pl'+i).value=s.l??s[0]??'';$('pt'+i).value=s.t??s[1]??'';$('pu'+i).value=s.u??s[2]??''});
 }
 const safeUrl=u=>/^(#|\/|https?:\/\/)/i.test(u)?u:'#projects';
 $('save').onclick=async()=>{
@@ -110,7 +110,7 @@ $('save').onclick=async()=>{
   try{
     const v=id=>$(id).value.trim();
     await setDoc(doc(db,'site','content'),{brand:v('brand'),h1a:v('h1a'),h1b:v('h1b'),lead:v('lead'),
-      stats:[0,1,2].map(i=>[v('sv'+i),v('sl'+i)]),slides:[0,1,2,3].map(i=>[v('pl'+i),v('pt'+i),safeUrl(v('pu'+i))])});
+      stats:[0,1,2].map(i=>({v:v('sv'+i),l:v('sl'+i)})),slides:[0,1,2,3].map(i=>({l:v('pl'+i),t:v('pt'+i),u:safeUrl(v('pu'+i))}))});
     if(pend.logo)await setDoc(doc(db,'site','logo'),{data:pend.logo});
     if(pend.hero)await setDoc(doc(db,'site','hero'),{data:pend.hero});
     note('Tersimpan. Refresh website untuk melihat hasilnya.');
