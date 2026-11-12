@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>WilkDez Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html{touch-action:manipulation;background:#000}
+body{font-family:'Poppins',system-ui,sans-serif;background:#000;color:#fff;min-height:100dvh;padding:max(16px,env(safe-area-inset-top)) 16px 60px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:860px;margin:0 auto}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 0 26px;flex-wrap:wrap}
+h1{font-size:1.3rem;font-weight:600}h2{font-size:1.05rem;font-weight:500;margin-bottom:14px}
+.card{border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:clamp(16px,3vw,26px);margin-bottom:18px;background:rgba(255,255,255,.04)}
+label{display:block;font-size:.82rem;color:rgba(255,255,255,.6);margin:12px 0 6px}
+input,textarea{width:100%;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.25);background:#0b0b0b;color:#fff;font:inherit;font-size:16px}
+textarea{resize:vertical;min-height:80px}
+input:focus,textarea:focus{outline:2px solid #fff;outline-offset:1px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:0 14px}
+.btn{height:48px;padding:0 24px;border-radius:999px;border:1px solid #fff;background:#fff;color:#000;font:inherit;font-weight:500;cursor:pointer}
+.btn.o{background:none;color:#fff;border-color:rgba(255,255,255,.35)}
+.btn:disabled{opacity:.5}
+.prev{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:10px}
+.prev img{max-height:90px;max-width:100%;border-radius:10px;background:#1a1a1a;object-fit:contain}
+.prev img.wide{max-height:130px}
+.sl{border-top:1px solid rgba(255,255,255,.12);margin-top:14px;padding-top:6px}
+#msg{position:fixed;left:16px;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));max-width:520px;margin:auto;padding:14px 18px;border-radius:14px;background:#fff;color:#000;font-size:.9rem;display:none;z-index:9}
+#login{max-width:400px;margin:12vh auto 0}
+.hide{display:none!important}
+small{color:rgba(255,255,255,.5)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div id="login" class="card">
+  <h1>Admin WilkDez</h1><small>Masuk dengan akun admin.</small>
+  <label for="em">Email</label><input id="em" type="email" autocomplete="username">
+  <label for="pw">Password</label><input id="pw" type="password" autocomplete="current-password">
+  <p style="margin-top:18px"><button class="btn" id="go" style="width:100%">Masuk</button></p>
+</div>
+
+<div id="panel" class="hide">
+  <header><h1>Dashboard WilkDez</h1>
+    <div><a class="btn o" href="index.html" style="display:inline-flex;align-items:center;text-decoration:none" target="_blank">Lihat website</a>
+    <button class="btn o" id="out">Keluar</button></div></header>
+
+  <div class="card"><h2>Branding</h2>
+    <label for="brand">Nama website</label><input id="brand" maxlength="40">
+    <label for="logo">Logo (PNG transparan disarankan)</label><input id="logo" type="file" accept="image/*">
+    <div class="prev"><img id="logoP" alt=""></div>
+    <label for="hero">Gambar background hero (laptop)</label><input id="hero" type="file" accept="image/*">
+    <div class="prev"><img id="heroP" class="wide" alt=""></div>
+    <small>Gambar otomatis dikecilkan agar muat di database gratis.</small></div>
+
+  <div class="card"><h2>Teks hero</h2>
+    <div class="grid"><div><label for="h1a">Judul baris 1</label><input id="h1a"></div>
+    <div><label for="h1b">Judul baris 2</label><input id="h1b"></div></div>
+    <label for="lead">Deskripsi</label><textarea id="lead"></textarea>
+    <div class="grid" id="stats"></div></div>
+
+  <div class="card"><h2>Spotlight (4 slide)</h2><div id="slides"></div></div>
+
+  <button class="btn" id="save" style="width:100%">Simpan semua perubahan</button>
+</div>
+</div>
+<div id="msg" role="status"></div>
+
+<script type="module">
+import {firebaseConfig,configured} from './firebase-config.js';
+const $=id=>document.getElementById(id);
+const note=(t)=>{const m=$('msg');m.textContent=t;m.style.display='block';clearTimeout(note.t);note.t=setTimeout(()=>m.style.display='none',4500)};
+if(!configured){note('Isi dulu firebase-config.js dengan data Firebase kamu.');}
+else{
+const A='https://www.gstatic.com/firebasejs/10.12.2/';
+const {initializeApp}=await import(A+'firebase-app.js');
+const {getAuth,signInWithEmailAndPassword,signOut,onAuthStateChanged}=await import(A+'firebase-auth.js');
+const {getFirestore,doc,getDoc,setDoc}=await import(A+'firebase-firestore.js');
+const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app);
+
+// form dinamis
+$('stats').innerHTML=[0,1,2].map(i=>`<div><label>Statistik ${i+1}: angka</label><input id="sv${i}"><label>Keterangan</label><input id="sl${i}"></div>`).join('');
+$('slides').innerHTML=[0,1,2,3].map(i=>`<div class="sl"><small>Slide ${i+1}</small><div class="grid"><div><label>Label</label><input id="pl${i}"></div><div><label>Judul</label><input id="pt${i}"></div><div><label>Link</label><input id="pu${i}" placeholder="#projects atau https://..."></div></div></div>`).join('');
+
+const pend={};
+const shrink=(file,max,type,q)=>new Promise((ok,no)=>{const r=new FileReader();r.onerror=no;r.onload=()=>{const i=new Image();i.onerror=no;i.onload=()=>{
+  const s=Math.min(1,max/Math.max(i.width,i.height)),c=document.createElement('canvas');c.width=Math.round(i.width*s);c.height=Math.round(i.height*s);
+  const x=c.getContext('2d');if(type==='image/jpeg'){x.fillStyle='#000';x.fillRect(0,0,c.width,c.height)}x.drawImage(i,0,0,c.width,c.height);
+  let d=c.toDataURL(type,q);while(d.length>900000&&type==='image/jpeg'&&q>.3){q-=.1;d=c.toDataURL(type,q)}
+  d.length>950000?no(new Error('Gambar terlalu besar, pakai yang lebih kecil')):ok(d)};i.src=r.result};r.readAsDataURL(file)});
+for(const [k,max,t,q] of [['logo',512,'image/png',1],['hero',1920,'image/jpeg',.85]]){
+  $(k).onchange=async e=>{const f=e.target.files[0];if(!f)return;try{pend[k]=await shrink(f,max,t,q);$(k+'P').src=pend[k];note('Gambar siap, tekan Simpan.')}catch(err){note(err.message||'Gagal membaca gambar')}}}
+
+const get=async k=>{try{const s=await getDoc(doc(db,'site',k));return s.exists()?s.data():null}catch(e){return null}};
+async function load(){
+  let [c,l,h]=await Promise.all([get('content'),get('logo'),get('hero')]);
+  if(l?.data)$('logoP').src=l.data; if(h?.data)$('heroP').src=h.data;
+  c=c||{};
+  $('brand').value=c.brand||'WilkDez';$('h1a').value=c.h1a||'Build Better';$('h1b').value=c.h1b||'Together.';
+  $('lead').value=c.lead||'We craft digital experiences, build innovative solutions, and turn ideas into reality.';
+  const st=c.stats||[['50+','Projects Delivered'],['10K+','Happy Users'],['99.9%','Uptime']];
+  const sl=c.slides||[['New Project','Next-Gen Platform','#projects'],['Featured','Studio Dashboard','#projects'],['Open Source','WilkDez UI Kit','#projects'],['Coming Soon','Mobile Companion','#projects']];
+  st.forEach((s,i)=>{$('sv'+i).value=s[0];$('sl'+i).value=s[1]});
+  sl.forEach((s,i)=>{$('pl'+i).value=s[0];$('pt'+i).value=s[1];$('pu'+i).value=s[2]});
+}
+const safeUrl=u=>/^(#|\/|https?:\/\/)/i.test(u)?u:'#projects';
+$('save').onclick=async()=>{
+  const b=$('save');b.disabled=true;
+  try{
+    const v=id=>$(id).value.trim();
+    await setDoc(doc(db,'site','content'),{brand:v('brand'),h1a:v('h1a'),h1b:v('h1b'),lead:v('lead'),
+      stats:[0,1,2].map(i=>[v('sv'+i),v('sl'+i)]),slides:[0,1,2,3].map(i=>[v('pl'+i),v('pt'+i),safeUrl(v('pu'+i))])});
+    if(pend.logo)await setDoc(doc(db,'site','logo'),{data:pend.logo});
+    if(pend.hero)await setDoc(doc(db,'site','hero'),{data:pend.hero});
+    note('Tersimpan. Refresh website untuk melihat hasilnya.');
+  }catch(e){note('Gagal menyimpan: '+(e.code==='permission-denied'?'akun ini bukan admin (cek firestore.rules)':e.message))}
+  b.disabled=false};
+
+$('go').onclick=async()=>{try{await signInWithEmailAndPassword(auth,$('em').value.trim(),$('pw').value)}catch(e){note('Email atau password salah')}};
+$('pw').onkeydown=e=>{if(e.key==='Enter')$('go').click()};
+$('out').onclick=()=>signOut(auth);
+onAuthStateChanged(auth,u=>{$('login').classList.toggle('hide',!!u);$('panel').classList.toggle('hide',!u);if(u)load()});
+}
+// anti zoom
+['gesturestart','gesturechange'].forEach(t=>document.addEventListener(t,e=>e.preventDefault()));
+document.addEventListener('wheel',e=>{if(e.ctrlKey)e.preventDefault()},{passive:false});
+</script>
+</body>
+</html>
