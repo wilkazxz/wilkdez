@@ -392,7 +392,8 @@ on('content',c=>{
   if(c.brand){$('brandName').textContent=c.brand;document.title=c.brand+' | Developer Studio'}
   if(c.h1a)$('h1a').textContent=c.h1a; if(c.h1b)$('h1b').textContent=c.h1b; if(c.lead)$('lead').textContent=c.lead;
   document.querySelectorAll('.stat').forEach((e,i)=>{const s=c.stats&&c.stats[i];if(s){e.querySelector('b').textContent=s.v??s[0];e.querySelector('small').textContent=s.l??s[1]}});
-  if(c.slides&&c.slides.length===SLIDES.length){c.slides.forEach((s,i)=>SLIDES[i]={label:s.l??s[0],title:s.t??s[1],url:s.u??s[2],img:''});show(0)}});
+  if(c.slides&&c.slides.length===SLIDES.length){c.slides.forEach((s,i)=>SLIDES[i]={label:s.l??s[0],title:s.t??s[1],url:s.u??s[2],img:SLIDES[i].img});show(cur)}});
+[0,1,2,3].forEach(i=>on('slide'+i,s=>{SLIDES[i].img=s.data||'';show(cur)}));
 onSnapshot(query(collection(db,'projects'),orderBy('created','desc')),s=>{projects=s.docs.map(d=>({id:d.id,...d.data()}));render()},()=>{});
 }
 </script>
