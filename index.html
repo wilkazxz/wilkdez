@@ -850,7 +850,9 @@ async function load(loud){
 /* ---- REALTIME (WebSocket): harga berdetak tiap detik, garis chart ikut bergerak ---- */
 function live(on){wsLive=on;const t=root.querySelector('.btc-tag');if(t)t.lastChild.textContent=on?'Live Market':'Menyambung…';
   const d=root.querySelector('.live');if(d)d.style.background=on?'#2ee59d':'#888'}
-function sched(){if(!raf)raf=requestAnimationFrame(()=>{raf=0;if(data.length>1)paint(!hov)})}
+let lastDraw=0;
+function sched(){if(raf)return;
+  raf=setTimeout(()=>{raf=0;lastDraw=performance.now();requestAnimationFrame(()=>{if(data.length>1)paint(!hov)})},Math.max(0,100-(performance.now()-lastDraw)))}
 function onStat(j,k){info=Object.assign({},info,{hi:+j.h*k||(info&&info.hi),lo:+j.l*k||(info&&info.lo),vol:+j.q*k||(info&&info.vol)});sched()}
 function onTick(p,t){
   if(!(p>0)||!data.length)return;
@@ -870,20 +872,28 @@ function onTick(p,t){
 }
 /* detak tiap detik: candle 1 menit tetap bergerak walau koin sepi transaksi */
 function beat(){if(days!==0||!data.length||!info||!(info.p>0))return;onTick(info.p,Date.now())}
+let pt=0,pb=false;
+async function poll(){
+  if(wsLive||pb||!data.length)return;pb=true;const S=coin.s,c=cur;
+  try{const j=await getJ(`${BN[0]}ticker/price?symbol=${S}USDT`,3000);
+    const k=c==='idr'?fx:1;if(S===coin.s&&c===cur&&k>0)onTick(+j.price*k,Date.now())}catch(e){}
+  pb=false}
 function connect(){
   if(ws||!seen||!vis||document.hidden||!('WebSocket' in window))return;
-  const c=cur,S=coin.s,s=S.toLowerCase()+'usdt';let w;
+  clearInterval(pt);pt=setInterval(poll,1500);
+  const c=cur,S=coin.s,s=S.toLowerCase()+'usdt';let w,to,opened=false;
   try{w=new WebSocket(WSH[wsHost%WSH.length]+s+'@trade/'+s+'@ticker'+(c==='idr'?'/usdtidr@ticker':''))}catch(e){return}
   ws=w;
-  w.onopen=()=>{wsDelay=1000;live(true);clearInterval(hb);hb=setInterval(beat,1000)};
+  to=setTimeout(()=>{if(ws===w&&!opened){try{w.close()}catch(_){}}},4000);
+  w.onopen=()=>{opened=true;clearTimeout(to);wsDelay=1000;live(true);clearInterval(hb);hb=setInterval(beat,1000)};
   w.onmessage=e=>{if(c!==cur||S!==coin.s)return;try{const m=JSON.parse(e.data),j=m.data||m;
     if(j.s==='USDTIDR'){if(+j.c>0)fx=+j.c;return}
     const k=c==='idr'?fx:1;if(!k)return;
     if(j.e==='trade')onTick(+j.p*k,+j.T);else if(j.e==='24hrTicker')onStat(j,k)}catch(_){}};
-  w.onclose=()=>{if(ws===w){ws=null;clearInterval(hb);live(false);wsHost++;setTimeout(connect,wsDelay);wsDelay=Math.min(wsDelay*2,15000)}};
+  w.onclose=()=>{clearTimeout(to);if(ws===w){ws=null;clearInterval(hb);live(false);wsHost++;setTimeout(connect,Math.min(wsDelay,3000));wsDelay=Math.min(wsDelay*2,15000)}};
   w.onerror=()=>{try{w.close()}catch(_){}};
 }
-function disconnect(){clearInterval(hb);const w=ws;ws=null;if(w){w.onclose=null;try{w.close()}catch(_){}}live(false)}
+function disconnect(){clearInterval(hb);clearInterval(pt);const w=ws;ws=null;if(w){w.onclose=null;try{w.close()}catch(_){}}live(false)}
 document.addEventListener('visibilitychange',()=>{if(document.hidden)disconnect();else if(vis){load(false);connect()}});
 
 /* ---- kontrol ---- */
