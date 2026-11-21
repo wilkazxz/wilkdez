@@ -36,6 +36,7 @@ a{color:inherit;text-decoration:none}
 button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 :focus-visible{outline:2px solid #fff;outline-offset:3px}
 img,svg{max-width:100%;display:block}
+.ico{width:18px;height:18px;flex-shrink:0}
 
 /* ===== HERO ===== */
 .hero{position:relative;min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;overflow:hidden;isolation:isolate}
@@ -58,8 +59,8 @@ img,svg{max-width:100%;display:block}
 .dd{position:relative}
 .dd-list{position:absolute;top:100%;left:-12px;min-width:190px;padding:8px;border:1px solid var(--line);border-radius:14px;background:rgba(10,10,10,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);display:none}
 .dd:hover .dd-list,.dd.open .dd-list{display:block}
-.dd-list a{display:block;padding:10px 12px;border-radius:8px}
-.dd-list a:hover{background:rgba(255,255,255,.1)}
+.dd-list a,.dd-list button{display:block;width:100%;text-align:left;padding:10px 12px;border-radius:8px}
+.dd-list a:hover,.dd-list button:hover{background:rgba(255,255,255,.1)}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;height:50px;padding:0 26px;border-radius:999px;border:1px solid var(--line);font-weight:500;font-size:.95rem;white-space:nowrap;transition:background .25s,color .25s,transform .25s}
 .btn-solid{background:#fff;color:#000;border-color:#fff}
 .btn-solid:hover{background:#e6e6e6}
@@ -139,7 +140,7 @@ h1 span{display:block;background:linear-gradient(180deg,#fff 0,#8d8d8d 100%);-we
   .dd-list{position:static;display:none;border:0;background:none;padding:0 0 0 12px;backdrop-filter:none;-webkit-backdrop-filter:none}
   .dd:hover .dd-list{display:none}
   .dd.open .dd-list{display:block}
-  .dd-list a{font-size:1.1rem}
+  .dd-list a,.dd-list button{font-size:1.1rem}
   .mob-cta{display:inline-flex;margin-top:22px}
   .burger{position:relative;z-index:25}
   .stage{grid-template-columns:1fr;grid-template-areas:"spot" "copy";align-content:end;align-items:end;gap:28px;padding-bottom:150px}
@@ -150,6 +151,7 @@ h1 span{display:block;background:linear-gradient(180deg,#fff 0,#8d8d8d 100%);-we
 /* ===== HP KECIL ===== */
 @media (max-width:560px){
   .cta .btn{flex:1 1 100%}
+  .cta .btn.mkb{flex:1 1 calc(50% - 7px);padding:0 14px}
   .stat{padding:0 14px}
   .slogan{display:none}
   .foot{justify-content:flex-start}
@@ -161,9 +163,11 @@ h1 span{display:block;background:linear-gradient(180deg,#fff 0,#8d8d8d 100%);-we
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 
-/* ===== CRYPTO SCREENER ===== */
-.menu .mb{position:relative;padding:8px 0;color:rgba(255,255,255,.85);white-space:nowrap}
+/* ===== TOMBOL MENU (Crypto / Saham AS / Screener) ===== */
+.menu .mb{position:relative;padding:8px 0;color:rgba(255,255,255,.85);white-space:nowrap;display:flex;align-items:center;gap:8px}
 .menu .mb:hover{color:#fff}
+
+/* ===== CRYPTO SCREENER + SCREENER SAHAM ===== */
 .scr{position:fixed;inset:0;z-index:210;background:#000;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 .scr[hidden]{display:none}
 .scr-in{max-width:1280px;margin:0 auto;padding:calc(24px + env(safe-area-inset-top)) var(--pad) calc(60px + env(safe-area-inset-bottom))}
@@ -229,6 +233,13 @@ h1 span{display:block;background:linear-gradient(180deg,#fff 0,#8d8d8d 100%);-we
 .scr-empty button{margin-top:12px;padding:10px 20px;border-radius:999px;border:1px solid var(--line);color:#fff}
 @media (max-width:700px){.btc-ctl .btn{flex:1 1 100%}.fc{grid-template-columns:repeat(3,1fr)}}
 
+/* ===== HITUNG MUNDUR MARKET ===== */
+.cd{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:18px;padding:14px 18px;border:1px solid var(--line);border-radius:18px;background:rgba(255,255,255,.04)}
+.cd small{display:block;color:var(--muted);font-size:.8rem}
+.cd b{display:block;font-size:clamp(1.3rem,4vw,1.9rem);font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.cd.open b{color:#2ee59d}
+.cd-w{color:var(--muted);font-size:.85rem;text-align:right}
+
 /* ===== BITCOIN CHART ===== */
 .btc{padding:80px var(--pad) 0;max-width:1200px;margin:0 auto}
 .btc-head{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap}
@@ -270,7 +281,7 @@ h1 span{display:block;background:linear-gradient(180deg,#fff 0,#8d8d8d 100%);-we
 .btc-src{margin-top:14px;color:var(--muted);font-size:.8rem}
 @media (max-width:700px){.btc-stats{grid-template-columns:repeat(2,1fr)}.btc-ctl{width:100%}.btc-ctl .seg{flex:1;justify-content:space-between}.btc-ctl .seg button{flex:1;padding:0 8px}}
 
-/* ===== COIN: ikon, pencarian, chip, tampil di home HP ===== */
+/* ===== COIN: ikon, pencarian, chip ===== */
 .btc h2{display:flex;align-items:center;flex-wrap:wrap;gap:8px 10px}
 .btc h2 b{font-weight:500}
 .cico{width:40px;height:40px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;overflow:hidden;font-style:normal;font-size:1rem;font-weight:600;background:linear-gradient(135deg,#555,#111);border:1px solid var(--line)}
@@ -282,31 +293,24 @@ h1 span{display:block;background:linear-gradient(180deg,#fff 0,#8d8d8d 100%);-we
 .chips button:hover{color:#fff}
 .chips button[aria-pressed=true]{background:#fff;color:#000;font-weight:500}
 .chips .cico{width:26px;height:26px;font-size:.72rem;border:0}
-.btc-slot{display:none}
-@media (max-width:900px){
-  .stage{grid-template-areas:"spot" "copy" "btc"}
-  .btc-slot{display:block;grid-area:btc;min-width:0}
-  .btc-slot .btc{padding:0;margin:0;max-width:none}
-  .btc-slot .btc-card{background:rgba(0,0,0,.55);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
-}
 
-/* ===== TAB KRIPTO / SAHAM AS + CHART SAHAM ===== */
-.mk-tabs-wrap{max-width:1200px;margin:0 auto;padding:70px var(--pad) 0}
-.mk .btc{padding-top:22px}
-.mk-tabs.seg{display:flex;width:100%;max-width:340px}
-.mk-tabs button{flex:1}
+/* ===== PANEL MARKET (isi tombol Crypto / Saham AS) ===== */
+.mk .btc{padding:22px 0 0;max-width:none}
+.mk-tabs.seg{display:flex;width:100%;max-width:360px;margin-top:4px}
+.mk-tabs button{flex:1;display:flex;align-items:center;justify-content:center;gap:8px}
 .btc[hidden]{display:none}
 .st-msg{position:absolute;inset:0;display:none;align-items:center;justify-content:center;text-align:center;padding:16px;color:var(--muted);font-size:.9rem;pointer-events:none}
 .btc-chart.empty .st-msg{display:flex}
 .btc-chart.empty svg{display:none}
-@media (max-width:900px){
-  .btc-slot .mk-tabs-wrap{padding:0 0 14px}
-  .btc-slot .mk .btc{padding:0}
-  .btc-slot .mk-tabs.seg{max-width:none}
-}
 </style>
 </head>
 <body>
+<!-- ikon tombol -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
+  <symbol id="i-btc" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.5 7.5h3.7a2.2 2.2 0 010 4.4H9.5h4.2a2.3 2.3 0 010 4.6H9.5M9.5 7.5v9M11.2 6v1.5M11.2 16.5V18M13.6 6v1.5M13.6 16.5V18"/></g></symbol>
+  <symbol id="i-us" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="2" y="5" width="20" height="14" rx="2.5"/><path d="M11 9h11M11 12.5h11M2 16h20"/></g><rect x="2.8" y="5.8" width="8" height="6" rx="1.4" fill="currentColor"/></symbol>
+</defs></svg>
+
 <header class="hero" id="home">
   <div class="hero-bg" role="img" aria-label="Laptop dengan logo kode di atas balok batu"></div>
 
@@ -324,9 +328,15 @@ h1 span{display:block;background:linear-gradient(180deg,#fff 0,#8d8d8d 100%);-we
           <a href="#projects">Semua Project</a><a href="#featured">Featured</a><a href="#latest">Terbaru</a>
         </div>
       </div>
-      <a href="#market" data-tab="crypto">Market</a>
-      <a href="#market" data-tab="stock">Saham US</a>
-      <button type="button" class="mb" data-scr>Screener</button>
+      <button type="button" class="mb" data-mk="crypto"><svg class="ico" aria-hidden="true"><use href="#i-btc"/></svg>Crypto</button>
+      <button type="button" class="mb" data-mk="stock"><svg class="ico" aria-hidden="true"><use href="#i-us"/></svg>Saham AS</button>
+      <div class="dd">
+        <button type="button" aria-haspopup="true" aria-expanded="false">Screener
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4l4 4 4-4"/></svg></button>
+        <div class="dd-list">
+          <button type="button" data-scr>Screener Crypto</button><button type="button" data-sscr>Screener Saham AS</button>
+        </div>
+      </div>
       <a href="#gallery">Gallery</a>
       <a href="#about">About</a>
       <a href="#services">Services</a>
@@ -348,8 +358,8 @@ h1 span{display:block;background:linear-gradient(180deg,#fff 0,#8d8d8d 100%);-we
       <div class="cta">
         <a class="btn btn-solid" href="#projects">Explore Projects
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 8h12M9 3l5 5-5 5"/></svg></a>
-        <button class="btn btn-ghost" type="button" data-scr>Crypto Screener
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l5-6 4 3 8-9M14 5h6v6"/></svg></button>
+        <button class="btn btn-ghost mkb" type="button" data-mk="crypto"><svg class="ico" aria-hidden="true"><use href="#i-btc"/></svg>Crypto</button>
+        <button class="btn btn-ghost mkb" type="button" data-mk="stock"><svg class="ico" aria-hidden="true"><use href="#i-us"/></svg>Saham AS</button>
         <a class="btn btn-ghost" href="#about">Learn More
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 2l7 5-7 5z"/></svg></a>
       </div>
@@ -371,8 +381,6 @@ h1 span{display:block;background:linear-gradient(180deg,#fff 0,#8d8d8d 100%);-we
         <svg width="16" height="16" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 11L11 3M5 3h6v6"/></svg></a>
     </aside>
 
-    <div class="btc-slot" id="btcSlot"></div>
-
     <nav class="side" aria-label="Bagian halaman">
       <a class="on" href="#home" aria-label="Home"></a><a href="#projects" aria-label="Projects"></a>
       <a href="#about" aria-label="About"></a><a href="#services" aria-label="Services"></a>
@@ -385,11 +393,21 @@ h1 span{display:block;background:linear-gradient(180deg,#fff 0,#8d8d8d 100%);-we
   </div>
 </header>
 
-<div id="market" class="mk">
-<div class="mk-tabs-wrap"><div class="seg mk-tabs" id="mkTabs" role="group" aria-label="Pilih pasar">
-  <button type="button" data-t="crypto" aria-pressed="true">Kripto</button>
-  <button type="button" data-t="stock" aria-pressed="false">Saham AS</button>
-</div></div>
+<!-- PANEL MARKET: terbuka dari tombol Crypto / Saham AS -->
+<div id="market" class="scr mk" hidden role="dialog" aria-modal="true" aria-label="Market">
+<div class="scr-in">
+  <div class="scr-top">
+    <div>
+      <p class="btc-tag"><i class="live"></i>Market</p>
+      <h2>Crypto &amp; Saham AS</h2>
+    </div>
+    <button class="scr-x" id="mkX" type="button" aria-label="Tutup">×</button>
+  </div>
+  <div class="seg mk-tabs" id="mkTabs" role="group" aria-label="Pilih pasar">
+    <button type="button" data-t="crypto" aria-pressed="true"><svg class="ico" aria-hidden="true"><use href="#i-btc"/></svg>Crypto</button>
+    <button type="button" data-t="stock" aria-pressed="false"><svg class="ico" aria-hidden="true"><use href="#i-us"/></svg>Saham AS</button>
+  </div>
+
 <section id="bitcoin" class="btc" aria-label="Chart harga koin">
   <div class="btc-head">
     <div>
@@ -435,12 +453,19 @@ h1 span{display:block;background:linear-gradient(180deg,#fff 0,#8d8d8d 100%);-we
   <div class="btc-head">
     <div>
       <p class="btc-tag"><i class="live"></i>Pasar AS tutup</p>
-      <h2><i class="cico" id="sIco">A</i><b id="sName">Apple</b><span id="sSym">AAPL</span></h2>
+      <h2><i class="cico" id="sIco">A</i><b id="sName">Anthropic</b><span id="sSym">ANT</span></h2>
     </div>
-    <div class="btc-ctl"><span class="chip">Candle 1 menit · USD</span></div>
+    <div class="btc-ctl">
+      <button class="btn btn-solid btn-sm" type="button" data-sscr>Screener · Entry TP SL</button>
+      <span class="chip">Candle 1 menit · USD</span>
+    </div>
+  </div>
+  <div class="cd" aria-live="off">
+    <div><small class="cd-l">Market AS buka dalam</small><b class="cd-t">—</b></div>
+    <div class="cd-w"></div>
   </div>
   <div class="coin-bar">
-    <input class="scr-q" id="stQ" type="search" enterkeyhint="search" placeholder="Cari saham: AAPL, TSLA, NVDA…" autocomplete="off" autocapitalize="characters" spellcheck="false" list="stDl" aria-label="Cari saham AS">
+    <input class="scr-q" id="stQ" type="search" enterkeyhint="search" placeholder="Cari saham: ANT, AAPL, TSLA, NVDA…" autocomplete="off" autocapitalize="characters" spellcheck="false" list="stDl" aria-label="Cari saham AS">
     <datalist id="stDl"></datalist>
   </div>
   <div class="chips" id="stChips" aria-label="Saham populer"></div>
@@ -460,6 +485,7 @@ h1 span{display:block;background:linear-gradient(180deg,#fff 0,#8d8d8d 100%);-we
     <p class="btc-src">Sumber: Finnhub. Chart dibangun dari transaksi live sejak halaman dibuka. Bukan saran investasi.</p>
   </div>
 </section>
+</div>
 </div>
 
 <section id="projects" class="pj">
@@ -654,6 +680,8 @@ on('hero',h=>{if(h.data&&h.data!==gv('wd_hero')){setHero(h.data);sv('wd_hero',h.
 onSnapshot(query(collection(db,'projects'),orderBy('created','desc')),s=>{projects=s.docs.map(d=>({id:d.id,...d.data()}));render()},()=>{});
 }
 </script>
+
+<!-- SCREENER CRYPTO -->
 <div id="scr" class="scr" hidden role="dialog" aria-modal="true" aria-label="Crypto Screener">
   <div class="scr-in">
     <div class="scr-top">
@@ -683,8 +711,41 @@ onSnapshot(query(collection(db,'projects'),orderBy('created','desc')),s=>{projec
     <p class="scr-note"><b>Cara kerja.</b> Skor Total = 65% Teknikal + 35% Fundamental. <b>Teknikal</b> (candle yang sudah close): EMA 20/50, RSI 14, MACD 12/26/9, ATR 14, volume, breakout/pullback, dan konfirmasi tren timeframe yang lebih besar. <b>Fundamental</b> (data terukur): peringkat &amp; market cap, likuiditas (volume/market cap), risiko dilusi (FDV/market cap), tren 7/30/200 hari, jarak dari ATH, funding rate futures, dan indeks Fear &amp; Greed. Fundamental di sini <b>tidak mencakup</b> berita, aktivitas on-chain, atau jadwal token unlock. Semua angka diambil langsung dari Binance, CoinGecko, Binance Futures, dan alternative.me; bila sebuah sumber gagal dimuat, bagian itu ditampilkan kosong, bukan diisi data pengganti. Level Entry, TP, dan SL hanya acuan hitungan, bukan saran investasi atau rekomendasi beli/jual, dan tidak ada jaminan profit. Tentukan sendiri ukuran posisi dan risikomu (DYOR).</p>
   </div>
 </div>
+
+<!-- SCREENER SAHAM AS -->
+<div id="sscr" class="scr" hidden role="dialog" aria-modal="true" aria-label="Screener Saham AS">
+  <div class="scr-in">
+    <div class="scr-top">
+      <div>
+        <p class="btc-tag"><i class="live"></i>Screener Saham AS · Teknikal + Fundamental</p>
+        <h2>Setup Entry · TP · SL</h2>
+      </div>
+      <button class="scr-x" id="ssX" type="button" aria-label="Tutup">×</button>
+    </div>
+    <div class="cd"><div><small class="cd-l">Market AS buka dalam</small><b class="cd-t">—</b></div><div class="cd-w"></div></div>
+    <div class="scr-bar" style="margin-top:18px">
+      <div class="seg" id="ssTf" role="group" aria-label="Timeframe">
+        <button type="button" data-v="5m" aria-pressed="false">5m</button>
+        <button type="button" data-v="15m" aria-pressed="true">15m</button>
+        <button type="button" data-v="1h" aria-pressed="false">1j</button>
+        <button type="button" data-v="1d" aria-pressed="false">1H</button>
+      </div>
+      <div class="seg" id="ssFl" role="group" aria-label="Arah">
+        <button type="button" data-v="all" aria-pressed="true">Semua</button>
+        <button type="button" data-v="LONG" aria-pressed="false">Long</button>
+        <button type="button" data-v="SHORT" aria-pressed="false">Short</button>
+      </div>
+      <input class="scr-q" id="ssQ" type="search" enterkeyhint="search" placeholder="Cari saham: ANT, AAPL, TSLA…" autocomplete="off" autocapitalize="characters" spellcheck="false" list="ssDl" aria-label="Cari saham AS">
+      <datalist id="ssDl"></datalist>
+    </div>
+    <div class="scr-meta"><span id="ssMeta">Menganalisis…</span><button type="button" id="ssRef">Refresh</button></div>
+    <div class="scr-grid" id="ssGrid"></div>
+    <p class="scr-note"><b>Cara kerja.</b> Skor Total = 65% Teknikal + 35% Fundamental. <b>Teknikal</b> (candle yang sudah close): EMA 20/50, RSI 14, MACD 12/26/9, ATR 14, volume, breakout/pullback, dan konfirmasi tren timeframe yang lebih besar. <b>Fundamental</b> (data terukur dari Finnhub): kapitalisasi pasar, pertumbuhan pendapatan &amp; EPS, margin laba bersih, P/E, kinerja harga 13 dan 52 minggu, serta jarak dari puncak 52 minggu. Fundamental di sini <b>tidak mencakup</b> berita, laporan keuangan terbaru yang belum masuk data, atau valuasi lintas sektor. Saham yang baru IPO seperti ANT bisa belum punya data fundamental lengkap; bila datanya kurang, skornya hanya teknikal. Candle diambil dari Finnhub dan di luar jam bursa analisa memakai data penutupan terakhir; data bisa tertunda dan tidak ada candle live di layar ini. Level Entry, TP, dan SL hanya acuan hitungan, bukan saran investasi atau rekomendasi beli/jual, dan tidak ada jaminan profit (DYOR).</p>
+  </div>
+</div>
+
 <script>
-/* ===== COIN CHART REALTIME (BTC + pencarian koin, tanpa library, lazy-load saat section mendekati layar) ===== */
+/* ===== COIN CHART REALTIME (BTC + pencarian koin, tanpa library, lazy-load saat section terlihat) ===== */
 (()=>{
 const $=id=>document.getElementById(id), root=$('bitcoin'), box=$('btcChart'), tip=$('btcTip');
 if(!root)return;
@@ -701,7 +762,7 @@ const getJ=async(u,ms=8000)=>{const c=new AbortController(),t=setTimeout(()=>c.a
   try{const r=await fetch(u,{signal:c.signal});if(!r.ok)throw new Error(r.status);return await r.json()}finally{clearTimeout(t)}};
 const sym=c=>c==='idr'?'BTCIDR':'BTCUSDT';
 
-/* ===== COIN: pilih koin (default BTC) + ikon + pindah ke home HP ===== */
+/* ===== COIN: pilih koin (default BTC) + ikon ===== */
 const QK=[['BTC','bitcoin','Bitcoin'],['ETH','ethereum','Ethereum'],['BNB','binancecoin','BNB'],['SOL','solana','Solana'],['XRP','ripple','XRP'],['DOGE','dogecoin','Dogecoin'],['ADA','cardano','Cardano'],['TON','the-open-network','Toncoin'],['SUI','sui','Sui'],['PEPE','pepe','Pepe']];
 let coin={s:'BTC',n:'Bitcoin'},hb=0;
 const ic={};try{Object.assign(ic,JSON.parse(localStorage.getItem('wd_ci')||'{}'))}catch(e){}
@@ -736,11 +797,6 @@ cq.addEventListener('input',()=>{clearTimeout(cqt);cqt=setTimeout(goQ,700)});
 cq.addEventListener('change',()=>goQ(1));
 cq.addEventListener('keydown',e=>{if(e.key==='Enter'){clearTimeout(cqt);goQ(1);cq.blur()}});
 paintChips();paintHead();setTimeout(loadIcons,2500);
-
-/* di HP (<=900px) bagian ini pindah ke dalam hero (home); di desktop kembali ke bawah hero */
-const slot=$('btcSlot'),mq=matchMedia('(max-width:900px)'),mkEl=$('market');
-const place=()=>{if(!slot||!mkEl)return;if(mq.matches){if(mkEl.parentNode!==slot)slot.appendChild(mkEl)}else if(mkEl.parentNode===slot)$('home').after(mkEl)};
-place();mq.addEventListener?mq.addEventListener('change',place):mq.addListener(place);
 
 async function series(c,d){
   const S=coin.s;
@@ -957,11 +1013,9 @@ $('btcRetry').onclick=()=>load(true);
 if('ResizeObserver' in window){let w=0;new ResizeObserver(()=>{const n=box.clientWidth;if(n!==w){w=n;if(data.length)draw()}}).observe(box)}
 else addEventListener('resize',()=>data.length&&draw());
 
-/* ---- mulai hanya saat section mendekati layar ---- */
+/* ---- mulai hanya saat panel Crypto benar-benar terlihat ---- */
 function start(){if(timer)return;timer=setInterval(()=>{if(!document.hidden)load(false)},60000)}
 function stop(){clearInterval(timer);timer=null}
-const warm=()=>{if(!seen){seen=true;load(true)}};
-if(document.readyState==='complete')setTimeout(warm,200);else addEventListener('load',()=>setTimeout(warm,200),{once:true});
 if('IntersectionObserver' in window){
   new IntersectionObserver(es=>{vis=es[0].isIntersecting;
     if(vis){if(!seen){seen=true;load(true)}else load(false);start();connect()}else{stop();disconnect()}},{rootMargin:'400px 0px'}).observe(root);
@@ -1052,15 +1106,15 @@ async function htf(s,t){
   hc[k]={t:now,v};return v;
 }
 
-/* ---- analisa teknikal (candle terakhir yang sudah close) ---- */
-function analyze(s,all,ht){
+/* ---- analisa teknikal (candle terakhir yang sudah close). hlabel = nama timeframe besar untuk label tag ---- */
+function analyze(s,all,ht,hlabel){
   const cs=all.slice(0,-1);if(cs.length<60)return null;
   const c=cs.map(x=>x.c),n=c.length-1,e20=ema(c,20),e50=ema(c,50),r=rsi(c),a=atr(cs),entry=c[n];
   if(!(a>0))return null;
   const e12=ema(c,12),e26=ema(c,26),ml=e12.map((v,i)=>v-e26[i]),sg=ema(ml,9),hh_=ml.map((v,i)=>v-sg[i]),hn=hh_[n],hp=hh_[n-1];
   const prev=cs.slice(-21,-1),avgV=prev.reduce((p,x)=>p+x.v,0)/20,vr=avgV?cs[n].v/avgV:1;
   const hh=Math.max(...prev.map(x=>x.h)),ll=Math.min(...prev.map(x=>x.l));
-  const L={s:0,t:[]},S={s:0,t:[]},vt='Vol '+vr.toFixed(1)+'x',rt='RSI '+r.toFixed(0),hl='Tren '+(HL[HT[tf]]||'')+' searah';
+  const L={s:0,t:[]},S={s:0,t:[]},vt='Vol '+vr.toFixed(1)+'x',rt='RSI '+r.toFixed(0),hl='Tren '+(hlabel||HL[HT[tf]]||'')+' searah';
   /* LONG */
   if(entry>e20[n]&&e20[n]>e50[n]){L.s+=2;L.t.push('Tren naik EMA')}else if(entry>e50[n]){L.s+=1;L.t.push('Di atas EMA50')}
   if(e20[n]>e20[n-3])L.s+=1;
@@ -1116,9 +1170,9 @@ const sgn=v=>(v>=0?'+':'')+v.toFixed(1)+'%';
 const cp=v=>v==null?'—':'$'+new Intl.NumberFormat('en-US',{notation:'compact',maximumFractionDigits:2}).format(v);
 const verdict=t=>t>=8?'Sangat kuat':t>=7?'Kuat':t>=6?'Cukup':'Lemah';
 
-/* ---- chart candle realtime per koin ---- */
-function candles(c){
-  const cs=(store[c.s]||[]).slice(-60);if(cs.length<10)return '';
+/* ---- chart candle per koin (arr opsional: dipakai juga oleh screener saham) ---- */
+function candles(c,arr){
+  const cs=(arr||store[c.s]||[]).slice(-60);if(cs.length<10)return '';
   const W=320,H=170,R=40,n=cs.length,cw=(W-R)/n,lv=[c.entry,c.tp1,c.tp2,c.sl];
   let mn=Math.min(...cs.map(x=>x.l),...lv),mx=Math.max(...cs.map(x=>x.h),...lv);const pd=(mx-mn)*.05||mx*.001;mn-=pd;mx+=pd;
   const Y=v=>H-(v-mn)/(mx-mn)*H,f=v=>Y(v).toFixed(1),bw=Math.max(1,cw*.62);
@@ -1128,7 +1182,7 @@ function candles(c){
   cs.forEach((d,i)=>{const x=i*cw+cw/2,u=d.c>=d.o,cl=u?'#2ee59d':'#ff5c6c',yo=Y(d.o),yc=Y(d.c);
     k+=`<line x1="${x.toFixed(1)}" x2="${x.toFixed(1)}" y1="${f(d.h)}" y2="${f(d.l)}" stroke="${cl}" stroke-width="1"/><rect x="${(x-bw/2).toFixed(1)}" y="${Math.min(yo,yc).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(1,Math.abs(yo-yc)).toFixed(1)}" fill="${cl}"/>`});
   const lc=cs[n-1],lcol=lc.c>=lc.o?'#2ee59d':'#ff5c6c';
-  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Candle ${c.s}/USDT">${zone(c.entry,c.tp2,'rgba(46,229,157,.10)')}${zone(c.entry,c.sl,'rgba(255,92,108,.12)')}${k}${ln(c.tp2,'#2ee59d','TP2',1)}${ln(c.tp1,'#2ee59d','TP1',1)}${ln(c.entry,'rgba(255,255,255,.75)','ENTRY',0)}${ln(c.sl,'#ff5c6c','SL',1)}<line x1="0" x2="${W-R}" y1="${f(lc.c)}" y2="${f(lc.c)}" stroke="${lcol}" stroke-width=".8" stroke-dasharray="1 3"/></svg>`;
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Candle ${c.s}">${zone(c.entry,c.tp2,'rgba(46,229,157,.10)')}${zone(c.entry,c.sl,'rgba(255,92,108,.12)')}${k}${ln(c.tp2,'#2ee59d','TP2',1)}${ln(c.tp1,'#2ee59d','TP1',1)}${ln(c.entry,'rgba(255,255,255,.75)','ENTRY',0)}${ln(c.sl,'#ff5c6c','SL',1)}<line x1="0" x2="${W-R}" y1="${f(lc.c)}" y2="${f(lc.c)}" stroke="${lcol}" stroke-width=".8" stroke-dasharray="1 3"/></svg>`;
 }
 function stat(c,p){
   const lg=c.dir==='LONG',r=(lg?p-c.entry:c.entry-p)/c.risk;
@@ -1250,18 +1304,20 @@ function wsStop(){const w=ws;ws=null;wsOn=false;if(w){w.onclose=null;try{w.close
 
 /* ---- buka / tutup ---- */
 function openScr(){
-  if(isOpen)return;isOpen=true;ov.hidden=false;document.body.style.overflow='hidden';
+  if(isOpen)return;isOpen=true;
   if(window.setMenu)setMenu(false);
+  ov.hidden=false;document.body.style.overflow='hidden';
   $('scrX').focus({preventScroll:true});
   run();wsStart();timer=setInterval(()=>{if(!document.hidden)run()},60000);
 }
 function closeScr(){
-  if(!isOpen)return;isOpen=false;ov.hidden=true;document.body.style.overflow='';
+  if(!isOpen)return;isOpen=false;ov.hidden=true;
+  const m=$('market');document.body.style.overflow=(m&&!m.hidden)?'hidden':'';
   clearInterval(timer);wsStop();tk++;
 }
 document.querySelectorAll('[data-scr]').forEach(b=>b.addEventListener('click',openScr));
 $('scrX').onclick=closeScr;
-document.addEventListener('keydown',e=>{if(e.key==='Escape')closeScr()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&isOpen){e.preventDefault();closeScr()}});
 $('scrRef').onclick=()=>run();
 grid.addEventListener('click',e=>{if(e.target.closest('.retry'))run()});
 /* ikon gagal dimuat -> pakai huruf pertama koin */
@@ -1280,17 +1336,21 @@ function applyQ(){
 qi.addEventListener('input',()=>{clearTimeout(qt);qt=setTimeout(applyQ,350)});
 qi.addEventListener('keydown',e=>{if(e.key==='Enter'){clearTimeout(qt);applyQ();qi.blur()}});
 seg($('scrFl'),v=>{flt=v;if(res)render()});
+
+/* dipakai bersama oleh screener saham */
+window.TA={ema,rsi,atr,analyze,candles,stat,fp,pc,sgn,cp,verdict,bar};
 })();
 </script>
 <script src="stock-config.js"></script>
 <script>
-/* ===== SAHAM AS REALTIME (Finnhub) + TAB KRIPTO/SAHAM ===== */
+/* ===== SAHAM AS REALTIME (Finnhub) + HITUNG MUNDUR MARKET + PANEL CRYPTO/SAHAM ===== */
 (()=>{
 const $=id=>document.getElementById(id),mk=$('market'),root=$('saham'),crypto=$('bitcoin'),box=$('stChart'),tip=$('stTip');
 if(!mk||!root||!crypto)return;
 const KEY=String(window.FINNHUB_KEY||'').trim(),FH='https://finnhub.io/api/v1/';
-const QK=[['AAPL','Apple'],['MSFT','Microsoft'],['NVDA','NVIDIA'],['TSLA','Tesla'],['AMZN','Amazon'],['GOOGL','Alphabet'],['META','Meta'],['AMD','AMD'],['NFLX','Netflix'],['SPY','S&P 500 ETF']];
-let sym='AAPL',nm='Apple',meta={},data=[],info=null,ws=null,wsLive=false,wsDelay=1000,lastTick=0,lastQ=0,qb=false,raf=0,lastDraw=0,hov=false,flashT=0,active=false,rid=0,t1=0;
+/* ANT (Anthropic, Nasdaq) selalu di paling kiri */
+const QK=[['ANT','Anthropic'],['AAPL','Apple'],['MSFT','Microsoft'],['NVDA','NVIDIA'],['TSLA','Tesla'],['AMZN','Amazon'],['GOOGL','Alphabet'],['META','Meta'],['AMD','AMD'],['NFLX','Netflix'],['SPY','S&P 500 ETF']];
+let sym='ANT',nm='Anthropic',meta={},data=[],info=null,ws=null,wsLive=false,wsDelay=1000,lastTick=0,lastQ=0,qb=false,raf=0,lastDraw=0,hov=false,flashT=0,active=false,rid=0,t1=0;
 const ic={};try{Object.assign(ic,JSON.parse(localStorage.getItem('wd_si')||'{}'))}catch(e){}
 const saveIc=()=>{try{localStorage.setItem('wd_si',JSON.stringify(ic))}catch(e){}};
 const getJ=async(u,ms=8000)=>{const c=new AbortController(),t=setTimeout(()=>c.abort(),ms);
@@ -1300,13 +1360,47 @@ const getJ=async(u,ms=8000)=>{const c=new AbortController(),t=setTimeout(()=>c.a
 const money=v=>v==null||isNaN(v)?'—':'$'+v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:v<1?4:2});
 const cmp=v=>v==null||isNaN(v)?'—':'$'+new Intl.NumberFormat('en-US',{notation:'compact',maximumFractionDigits:2}).format(v);
 const fmtT=t=>new Date(t).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
-function nyOpen(){
-  const f=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',weekday:'short',hour:'numeric',minute:'numeric',hour12:false}).formatToParts(new Date()),g=k=>f.find(x=>x.type===k).value;
-  const m=(+g('hour')%24)*60+(+g('minute'));
-  return !['Sat','Sun'].includes(g('weekday'))&&m>=570&&m<960;
-}
 
-/* ---- tab Kripto / Saham AS ---- */
+/* ===== JADWAL BURSA AS (NYSE/Nasdaq, jam reguler 09.30-16.00 waktu New York) + HITUNG MUNDUR =====
+   Daftar libur ini perlu ditambah tiap tahun. Libur dan hari setengah (tutup 13.00) 2026-2027. */
+const HOL=new Set(['2026-12-25','2027-01-01','2027-01-18','2027-02-15','2027-03-26','2027-05-31','2027-06-18','2027-07-05','2027-09-06','2027-11-25','2027-12-24',
+  '2026-01-01','2026-01-19','2026-02-16','2026-04-03','2026-05-25','2026-06-19','2026-07-03','2026-09-07','2026-11-26']);
+const EARLY=new Set(['2026-11-27','2026-12-24','2027-11-26']);
+const pad2=n=>String(n).padStart(2,'0'),dkey=(y,m,d)=>y+'-'+pad2(m)+'-'+pad2(d);
+const etParts=t=>{const o={};new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).formatToParts(new Date(t)).forEach(x=>o[x.type]=x.value);return o};
+/* waktu dinding New York -> milidetik UTC (aman terhadap perubahan jam musim panas) */
+const etWall=(y,m,d,h,mi)=>{const target=Date.UTC(y,m-1,d,h,mi);let g=target;
+  for(let i=0;i<2;i++){const p=etParts(g);g+=target-Date.UTC(+p.year,+p.month-1,+p.day,+p.hour,+p.minute)}return g};
+const trading=(y,m,d)=>{const w=new Date(Date.UTC(y,m-1,d)).getUTCDay();return w>0&&w<6&&!HOL.has(dkey(y,m,d))};
+function mkt(now){
+  const p=etParts(now),y=+p.year,m=+p.month,d=+p.day;
+  if(trading(y,m,d)){
+    const o=etWall(y,m,d,9,30),c=etWall(y,m,d,EARLY.has(dkey(y,m,d))?13:16,0);
+    if(now>=o&&now<c)return{open:true,to:c};
+    if(now<o)return{open:false,to:o};
+  }
+  for(let i=1;i<=12;i++){const t=new Date(Date.UTC(y,m-1,d+i)),yy=t.getUTCFullYear(),mm=t.getUTCMonth()+1,dd=t.getUTCDate();
+    if(trading(yy,mm,dd))return{open:false,to:etWall(yy,mm,dd,9,30)}}
+  return{open:false,to:null};
+}
+const nyOpen=()=>mkt(Date.now()).open;
+function cdPaint(){
+  if(document.hidden)return;
+  const els=document.querySelectorAll('.cd');if(!els.length)return;
+  const now=Date.now(),m=mkt(now);let l,t,w='';
+  if(!m.to){l='Jadwal bursa belum tersedia';t='—'}
+  else{
+    const s=Math.max(0,Math.floor((m.to-now)/1000)),d=Math.floor(s/86400),h=Math.floor(s%86400/3600),mi=Math.floor(s%3600/60),sc=s%60;
+    t=(d?d+' hari ':'')+pad2(h)+':'+pad2(mi)+':'+pad2(sc);
+    l=m.open?'Market AS tutup dalam':'Market AS buka dalam';
+    w=(m.open?'Tutup ':'Buka ')+new Date(m.to).toLocaleString('id-ID',{timeZone:'Asia/Jakarta',weekday:'long',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})+' WIB';
+  }
+  els.forEach(e=>{e.classList.toggle('open',m.open);e.querySelector('.cd-l').textContent=l;e.querySelector('.cd-t').textContent=t;e.querySelector('.cd-w').textContent=w});
+}
+cdPaint();setInterval(cdPaint,1000);
+window.NY={mkt,cdPaint};
+
+/* ---- panel Crypto / Saham AS (dibuka dari tombol) ---- */
 const tabs=$('mkTabs');
 function setTab(t){
   crypto.hidden=t!=='crypto';root.hidden=t!=='stock';
@@ -1314,7 +1408,16 @@ function setTab(t){
   if(t==='stock')startSt();else stopSt();
 }
 tabs.addEventListener('click',e=>{const b=e.target.closest('button');if(b)setTab(b.dataset.t)});
-document.querySelectorAll('[data-tab]').forEach(a=>a.addEventListener('click',()=>setTab(a.dataset.tab)));
+function openMk(t){
+  if(window.setMenu)setMenu(false);
+  mk.hidden=false;document.body.style.overflow='hidden';
+  setTab(t||'crypto');cdPaint();
+  $('mkX').focus({preventScroll:true});
+}
+function closeMk(){mk.hidden=true;document.body.style.overflow='';stopSt()}
+document.querySelectorAll('[data-mk]').forEach(b=>b.addEventListener('click',()=>openMk(b.dataset.mk)));
+$('mkX').onclick=closeMk;
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!e.defaultPrevented&&!mk.hidden)closeMk()});
 
 /* ---- ikon + kepala ---- */
 function icoEl(el,s){el.textContent='';const im=new Image();im.alt='';im.referrerPolicy='no-referrer';
@@ -1432,7 +1535,7 @@ function status(){
   else{s='Pasar AS tutup';c='#888'}
   if(t.lastChild.textContent!==s)t.lastChild.textContent=s;
   d.style.background=c;
-  $('stMsg').textContent=open?'Menunggu transaksi pertama…':'Pasar AS sedang tutup. Chart live berjalan saat jam bursa AS (sekitar 20.30–04.00 WIB).';
+  $('stMsg').textContent=open?'Menunggu transaksi pertama…':'Pasar AS sedang tutup. Chart live berjalan saat bursa buka, lihat hitung mundur di atas.';
 }
 
 /* ---- tick realtime -> candle 1 menit ---- */
@@ -1491,7 +1594,7 @@ function setSym(v){
 }
 $('stDl').innerHTML=QK.map(q=>`<option value="${q[0]}" label="${q[1]}">`).join('');
 const sq=$('stQ');let sqt=0;
-const goQ=f=>{const v=sq.value.trim();if(v)setSym(v);else if(f)setSym('AAPL')};
+const goQ=f=>{const v=sq.value.trim();if(v)setSym(v);else if(f)setSym('ANT')};
 sq.addEventListener('input',()=>{clearTimeout(sqt);sqt=setTimeout(goQ,700)});
 sq.addEventListener('change',()=>goQ(1));
 sq.addEventListener('keydown',e=>{if(e.key==='Enter'){clearTimeout(sqt);goQ(1);sq.blur()}});
@@ -1504,7 +1607,196 @@ function startSt(){
   loadSt();wsConnect();t1=setInterval(tick1,1000);
 }
 function stopSt(){active=false;clearInterval(t1);wsStop()}
-$('stDl');paintChips();paintHead();
+paintChips();paintHead();
+})();
+</script>
+<script>
+/* ===== SCREENER SAHAM AS: teknikal (candle Finnhub) + fundamental (Finnhub metric). Tanpa data contoh ===== */
+(()=>{
+const $=id=>document.getElementById(id),ov=$('sscr'),grid=$('ssGrid');
+if(!ov||!window.TA)return;
+const T=window.TA,KEY=String(window.FINNHUB_KEY||'').trim(),FH='https://finnhub.io/api/v1/';
+const LIST=[['ANT','Anthropic'],['AAPL','Apple'],['MSFT','Microsoft'],['NVDA','NVIDIA'],['TSLA','Tesla'],['AMZN','Amazon'],['GOOGL','Alphabet'],['META','Meta'],['AMD','AMD'],['NFLX','Netflix'],['AVGO','Broadcom'],['JPM','JPMorgan']];
+const NM=Object.fromEntries(LIST),SY=LIST.map(x=>x[0]);
+const RES={'5m':'5','15m':'15','1h':'60','1d':'D'},HTR={'5':'60','15':'60','60':'D','D':'W'},HLB={'5':'1j','15':'1j','60':'1H','D':'1M'};
+const SPAN={'5':8,'15':16,'60':45,'D':400,'W':1500},TL={'5m':'5m','15m':'15m','1h':'1j','1d':'1H'};
+let tf='15m',flt='all',res=[],okN=0,isOpen=false,tk=0,timer=null,q='',qres=null,at='',denied=false,limited=false;
+const store={},mets={},hc={};
+const KEYS=['marketCapitalization','peTTM','revenueGrowthTTMYoy','epsGrowthTTMYoy','netProfitMarginTTM','52WeekPriceReturnDaily','13WeekPriceReturnDaily','52WeekHigh','beta'];
+
+const getJ=async(u,ms=10000)=>{const c=new AbortController(),t=setTimeout(()=>c.abort(),ms);
+  try{const r=await fetch(u,{signal:c.signal});if(!r.ok)throw new Error(r.status);return await r.json()}finally{clearTimeout(t)}};
+async function kl(s,r){
+  const n=Math.floor(Date.now()/1000);
+  const j=await getJ(`${FH}stock/candle?symbol=${encodeURIComponent(s)}&resolution=${r}&from=${n-SPAN[r]*86400}&to=${n}&token=${encodeURIComponent(KEY)}`);
+  if(!j||j.s!=='ok'||!j.t||!j.t.length)return null;
+  return j.t.map((t,i)=>({t:t*1000,o:j.o[i],h:j.h[i],l:j.l[i],c:j.c[i],v:j.v[i]})).slice(-150);
+}
+const safe=(s,r)=>kl(s,r).catch(e=>{const m=String(e.message);if(m==='403'||m==='401')denied=true;else if(m==='429')limited=true;return null});
+
+/* tren timeframe lebih besar: 1 naik, -1 turun, 0 sideways */
+async function htf(s,r){
+  const k=s+r,now=Date.now();
+  if(hc[k]&&now-hc[k].t<6e5)return hc[k].v;
+  const a=await safe(s,HTR[r]);if(!a||a.length<60)return hc[k]?hc[k].v:null;
+  const c=a.slice(0,-1).map(x=>x.c),n=c.length-1,e20=T.ema(c,20),e50=T.ema(c,50);
+  const v=c[n]>e50[n]&&e20[n]>e50[n]?1:c[n]<e50[n]&&e20[n]<e50[n]?-1:0;
+  hc[k]={t:now,v};return v;
+}
+/* fundamental dari Finnhub, cache 1 jam */
+const pick=o=>{const r={};KEYS.forEach(k=>{if(o[k]!=null)r[k]=o[k]});return Object.keys(r).length?r:null};
+async function metric(s){
+  let c=null;try{c=JSON.parse(localStorage.getItem('wd_sfm_'+s)||'null')}catch(e){}
+  if(c&&Date.now()-c.t<36e5){mets[s]=c.d;return}
+  try{const j=await getJ(`${FH}stock/metric?symbol=${encodeURIComponent(s)}&metric=all&token=${encodeURIComponent(KEY)}`);
+    const m=j&&j.metric?pick(j.metric):null;mets[s]=m;
+    try{localStorage.setItem('wd_sfm_'+s,JSON.stringify({t:Date.now(),d:m}))}catch(e){}
+  }catch(e){if(c)mets[s]=c.d}
+}
+function fscore(m,dir,px){
+  if(!m)return null;
+  const L=dir==='LONG',a=L?1:-1,t=[];let p=0,h=0;
+  const mc=m.marketCapitalization;
+  if(mc!=null){h++;p+=mc>=2e5?2:mc>=1e4?1.5:mc>=2e3?1:.5;if(mc>=2e5)t.push('Large cap')}
+  const rg=m.revenueGrowthTTMYoy;
+  if(rg!=null){h++;if(L){if(rg>15){p+=2;t.push('Revenue '+T.sgn(rg))}else if(rg>5)p+=1;else if(rg<0)p-=.5}else if(rg<0){p+=1.5;t.push('Revenue '+T.sgn(rg))}else if(rg<5)p+=.5}
+  const eg=m.epsGrowthTTMYoy;
+  if(eg!=null){h++;if(L){if(eg>10){p+=1.5;t.push('EPS '+T.sgn(eg))}else if(eg>0)p+=.5}else if(eg<0){p+=1;t.push('EPS '+T.sgn(eg))}}
+  const nm=m.netProfitMarginTTM;
+  if(nm!=null){h++;if(L){if(nm>15){p+=1.5;t.push('Margin '+nm.toFixed(0)+'%')}else if(nm>5)p+=.75;else if(nm<0)p-=.5}else if(nm<0){p+=1;t.push('Merugi')}}
+  const pe=m.peTTM;
+  if(pe!=null){h++;if(L){if(pe>0&&pe<=25)p+=1;else if(pe>0&&pe<=40)p+=.5;else if(pe>60){p-=.5;t.push('P/E tinggi')}}else{if(pe>60){p+=1;t.push('P/E tinggi')}else if(pe<=0)p+=.5}}
+  const r52=m['52WeekPriceReturnDaily'];
+  if(r52!=null){h++;if(r52*a>0){p+=1.5;t.push('52mgg '+T.sgn(r52))}}
+  const r13=m['13WeekPriceReturnDaily'];
+  if(r13!=null){h++;if(r13*a>0){p+=1;t.push('13mgg '+T.sgn(r13))}}
+  const hi=m['52WeekHigh'];
+  if(L&&hi>0&&px>=hi*.9){h++;p+=1;t.push('Dekat puncak 52mgg')}
+  if(h<2)return null;
+  return{score:Math.max(0,Math.min(10,p/(L?11.5:9)*10)),tags:t};
+}
+
+const icon=s=>`<div class="av" data-l="${s[0]}"><img src="https://financialmodelingprep.com/image-stock/${encodeURIComponent(s)}.png" alt="" loading="lazy" referrerpolicy="no-referrer"></div>`;
+function chips(m){
+  const a=[];
+  if(m){
+    if(m.marketCapitalization)a.push(['MCap',T.cp(m.marketCapitalization*1e6)]);
+    if(m.peTTM>0)a.push(['P/E',m.peTTM.toFixed(1)]);
+    if(m.revenueGrowthTTMYoy!=null)a.push(['Rev YoY',T.sgn(m.revenueGrowthTTMYoy)]);
+    if(m.netProfitMarginTTM!=null)a.push(['Margin',m.netProfitMarginTTM.toFixed(1)+'%']);
+    if(m['52WeekPriceReturnDaily']!=null)a.push(['52mgg',T.sgn(m['52WeekPriceReturnDaily'])]);
+    if(m.beta!=null)a.push(['Beta',m.beta.toFixed(2)]);
+    if(m['52WeekHigh']>0)a.push(['High 52mgg',T.fp(m['52WeekHigh'])]);
+  }
+  return a.length?`<div class="fc">${a.map(x=>`<div><small>${x[0]}</small><b>${x[1]}</b></div>`).join('')}</div>`:'<p class="nd">Data fundamental belum tersedia (mis. saham baru IPO).</p>';
+}
+const card=c=>{
+  const st=T.stat(c,c.last),tg=c.tags.map(t=>[t,'']).concat(c.ftags.map(t=>[t,'fd'])).slice(0,9);
+  return `<article class="sc" data-s="${c.s}">
+  <div class="sc-h">${icon(c.s)}<div class="sc-n"><b>${c.s}</b><small>${NM[c.s]||'Saham AS'} · ${TL[tf]}</small></div><span class="dir ${c.dir}">${c.dir}</span></div>
+  <div class="sbs">${T.bar('Teknikal',c.tech)}${T.bar('Fundamental',c.fs)}${T.bar('Total',c.total,'tot')}</div>
+  <div class="vd"><span>Kualitas setup: ${T.verdict(c.total)}</span><span>Candle ${TL[tf]}</span></div>
+  <div class="cc">${T.candles(c,store[c.s])}</div>
+  <div class="lv">
+    <div class="e"><small>Entry</small><b>${T.fp(c.entry)}</b></div>
+    <div class="s"><small>Stop Loss</small><b>${T.fp(c.sl)}</b><i>${T.pc(c.sl,c.entry)}</i></div>
+    <div class="t"><small>TP1 (1.5R)</small><b>${T.fp(c.tp1)}</b><i>${T.pc(c.tp1,c.entry)}</i></div>
+    <div class="t"><small>TP2 (2.5R)</small><b>${T.fp(c.tp2)}</b><i>${T.pc(c.tp2,c.entry)}</i></div>
+  </div>
+  <div class="sc-l"><span>Harga terakhir <span class="lp">${T.fp(c.last)}</span></span><span class="lr">${st.r>=0?'+':''}${st.r.toFixed(2)}R</span><span class="st ${st.k}">${st.t}</span></div>
+  ${chips(mets[c.s])}
+  <div class="tags">${tg.map((t,i)=>`<span class="${i?'':'sk'} ${t[1]}">${t[0]}</span>`).join('')}</div>
+</article>`};
+
+const closedNote=()=>window.NY&&!window.NY.mkt(Date.now()).open?' · pasar tutup, memakai data penutupan terakhir':'';
+function errMsg(){
+  const m=denied?'Finnhub menolak permintaan data candle saham (kode 401/403). Endpoint candle bisa dibatasi di paket gratis, jadi screener saham butuh akun Finnhub yang menyertakan data candle, atau API key-nya perlu dicek.'
+    :limited?'Batas request Finnhub tercapai. Tunggu sekitar semenit lalu coba lagi.':'Data candle saham belum bisa dimuat.';
+  $('ssMeta').textContent='Gagal memuat data.';
+  grid.innerHTML=`<div class="scr-empty">${m}<br><button type="button" class="retry">Coba lagi</button></div>`;
+}
+function render(){
+  const meta=$('ssMeta');
+  if(q)return renderQ();
+  if(res===null){errMsg();return}
+  const list=res.filter(c=>flt==='all'||c.dir===flt);
+  meta.textContent=`${res.length} setup dari ${okN} saham · ${TL[tf]} · diperbarui ${at}`+closedNote();
+  grid.innerHTML=list.length?list.map(card).join(''):'<div class="scr-empty">Belum ada setup yang cukup kuat di timeframe ini. Coba timeframe lain atau tunggu candle berikutnya.</div>';
+}
+function renderQ(){
+  const meta=$('ssMeta');
+  if(!qres||qres.s!==q){meta.textContent=`Menganalisis ${q}…`;grid.innerHTML='';return}
+  if(qres.err){meta.textContent=`Pencarian ${q}`;grid.innerHTML=`<div class="scr-empty">${qres.err}</div>`;return}
+  meta.textContent=`Pencarian ${q} · ${TL[tf]} · diperbarui ${at}`+closedNote();
+  grid.innerHTML=qres.c?card(qres.c):`<div class="scr-empty">Belum jumpa zona baiknya untuk ${q} di timeframe ${TL[tf]}.<br>Coba timeframe lain atau tunggu candle berikutnya.</div>`;
+}
+const stamp=()=>new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+function build(s,cs,h,r){
+  let c=T.analyze(s,cs,h,HLB[r]);if(!c)return null;
+  const f=fscore(mets[s],c.dir,c.last);c.fs=f?f.score:null;c.ftags=f?f.tags:[];
+  c.total=f?+(.65*c.tech+.35*f.score).toFixed(1):+c.tech.toFixed(1);
+  return c.total>=5.5?c:null;
+}
+async function runQ(){
+  const id=++tk,t=tf,r=RES[t],s=q;denied=limited=false;
+  if(!qres||qres.s!==s)renderQ();
+  const cs=await safe(s,r);
+  if(id!==tk||!isOpen||q!==s)return;
+  if(!cs){qres={s,err:denied||limited?'Data candle belum bisa diambil dari Finnhub (akses ditolak atau batas request tercapai).':`Saham ${s} tidak ditemukan di bursa AS, atau belum punya data candle untuk timeframe ini.`};renderQ();return}
+  if(cs.length<60){qres={s,err:`Data candle ${s} belum cukup untuk dianalisis (saham terlalu baru untuk timeframe ${TL[t]}). Coba timeframe lebih kecil.`};renderQ();return}
+  const [h]=await Promise.all([htf(s,r),metric(s)]);
+  if(id!==tk||!isOpen||q!==s)return;
+  store[s]=cs;
+  qres={s,c:build(s,cs,h,r)};at=stamp();renderQ();
+}
+async function run(){
+  if(!KEY){$('ssMeta').textContent='Belum siap';grid.innerHTML='<div class="scr-empty">API key Finnhub belum diisi. Isi FINNHUB_KEY di file stock-config.js.</div>';return}
+  if(q)return runQ();
+  const id=++tk,t=tf,r=RES[t];denied=limited=false;
+  if(!res||!res.length)$('ssMeta').textContent=`Menganalisis ${SY.length} saham…`;
+  const all=await Promise.all(SY.map(s=>safe(s,r).then(cs=>({s,cs}))));
+  if(id!==tk||!isOpen)return;
+  const ok=all.filter(x=>x.cs&&x.cs.length>60);okN=ok.length;
+  if(!ok.length){res=null;errMsg();return}
+  await Promise.all([...ok.map(x=>htf(x.s,r).then(h=>{x.h=h})),...ok.map(x=>metric(x.s))]);
+  if(id!==tk||!isOpen)return;
+  ok.forEach(x=>{store[x.s]=x.cs});
+  res=ok.map(x=>build(x.s,x.cs,x.h,r)).filter(Boolean).sort((a,b)=>b.total-a.total||b.vr-a.vr);
+  at=stamp();render();
+}
+
+function openScr(){
+  if(isOpen)return;isOpen=true;
+  if(window.setMenu)setMenu(false);
+  ov.hidden=false;document.body.style.overflow='hidden';
+  $('ssX').focus({preventScroll:true});
+  if(window.NY)window.NY.cdPaint();
+  run();timer=setInterval(()=>{if(!document.hidden)run()},180000);   /* 3 menit: hemat batas request Finnhub */
+}
+function closeScr(){
+  if(!isOpen)return;isOpen=false;ov.hidden=true;
+  const m=$('market');document.body.style.overflow=(m&&!m.hidden)?'hidden':'';
+  clearInterval(timer);tk++;
+}
+document.querySelectorAll('[data-sscr]').forEach(b=>b.addEventListener('click',openScr));
+$('ssX').onclick=closeScr;
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&isOpen){e.preventDefault();closeScr()}});
+$('ssRef').onclick=()=>run();
+grid.addEventListener('click',e=>{if(e.target.closest('.retry'))run()});
+grid.addEventListener('error',e=>{const im=e.target;if(im.tagName==='IMG'&&im.parentElement.classList.contains('av')){im.parentElement.textContent=im.parentElement.dataset.l}},true);
+function seg(el,fn){el.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  el.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));fn(b.dataset.v)})}
+seg($('ssTf'),v=>{tf=v;res=[];qres=null;grid.innerHTML='';run()});
+seg($('ssFl'),v=>{flt=v;if(res)render()});
+$('ssDl').innerHTML=LIST.map(x=>`<option value="${x[0]}" label="${x[1]}">`).join('');
+const qi=$('ssQ');let qt=0;
+function applyQ(){
+  const n=qi.value.toUpperCase().replace(/[^A-Z.\-]/g,'').slice(0,10);
+  if(n===q)return;
+  q=n;qres=null;res=[];grid.innerHTML='';run();
+}
+qi.addEventListener('input',()=>{clearTimeout(qt);qt=setTimeout(applyQ,500)});
+qi.addEventListener('keydown',e=>{if(e.key==='Enter'){clearTimeout(qt);applyQ();qi.blur()}});
 })();
 </script>
 </body>
