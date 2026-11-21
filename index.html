@@ -269,6 +269,26 @@ h1 span{display:block;background:linear-gradient(180deg,#fff 0,#8d8d8d 100%);-we
 .bs b{display:block;font-weight:500;font-size:1rem;font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .btc-src{margin-top:14px;color:var(--muted);font-size:.8rem}
 @media (max-width:700px){.btc-stats{grid-template-columns:repeat(2,1fr)}.btc-ctl{width:100%}.btc-ctl .seg{flex:1;justify-content:space-between}.btc-ctl .seg button{flex:1;padding:0 8px}}
+
+/* ===== COIN: ikon, pencarian, chip, tampil di home HP ===== */
+.btc h2{display:flex;align-items:center;flex-wrap:wrap;gap:8px 10px}
+.btc h2 b{font-weight:500}
+.cico{width:40px;height:40px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;overflow:hidden;font-style:normal;font-size:1rem;font-weight:600;background:linear-gradient(135deg,#555,#111);border:1px solid var(--line)}
+.cico img{width:100%;height:100%;object-fit:cover}
+.coin-bar{margin-top:18px;display:flex}
+.chips{display:flex;gap:8px;margin-top:12px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding-bottom:2px}
+.chips::-webkit-scrollbar{display:none}
+.chips button{display:inline-flex;align-items:center;gap:8px;height:38px;padding:0 14px 0 6px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.05);font-size:.85rem;color:var(--muted);flex-shrink:0;transition:background .2s,color .2s}
+.chips button:hover{color:#fff}
+.chips button[aria-pressed=true]{background:#fff;color:#000;font-weight:500}
+.chips .cico{width:26px;height:26px;font-size:.72rem;border:0}
+.btc-slot{display:none}
+@media (max-width:900px){
+  .stage{grid-template-areas:"spot" "copy" "btc"}
+  .btc-slot{display:block;grid-area:btc;min-width:0}
+  .btc-slot .btc{padding:0;margin:0;max-width:none}
+  .btc-slot .btc-card{background:rgba(0,0,0,.55);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+}
 </style>
 </head>
 <body>
@@ -335,6 +355,8 @@ h1 span{display:block;background:linear-gradient(180deg,#fff 0,#8d8d8d 100%);-we
         <svg width="16" height="16" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 11L11 3M5 3h6v6"/></svg></a>
     </aside>
 
+    <div class="btc-slot" id="btcSlot"></div>
+
     <nav class="side" aria-label="Bagian halaman">
       <a class="on" href="#home" aria-label="Home"></a><a href="#projects" aria-label="Projects"></a>
       <a href="#about" aria-label="About"></a><a href="#services" aria-label="Services"></a>
@@ -347,11 +369,11 @@ h1 span{display:block;background:linear-gradient(180deg,#fff 0,#8d8d8d 100%);-we
   </div>
 </header>
 
-<section id="bitcoin" class="btc" aria-label="Chart harga Bitcoin">
+<section id="bitcoin" class="btc" aria-label="Chart harga koin">
   <div class="btc-head">
     <div>
       <p class="btc-tag"><i class="live"></i>Live Market</p>
-      <h2>Bitcoin <span>BTC</span></h2>
+      <h2><i class="cico" id="cIco">B</i><b id="cName">Bitcoin</b><span id="cSym">BTC</span></h2>
     </div>
     <div class="btc-ctl">
       <button class="btn btn-solid btn-sm" type="button" data-scr>Screener · Entry TP SL</button>
@@ -368,6 +390,11 @@ h1 span{display:block;background:linear-gradient(180deg,#fff 0,#8d8d8d 100%);-we
       </div>
     </div>
   </div>
+  <div class="coin-bar">
+    <input class="scr-q" id="coinQ" type="search" enterkeyhint="search" placeholder="Cari koin: ETH, SOL, XRP…" autocomplete="off" autocapitalize="characters" spellcheck="false" list="coinDl" aria-label="Cari koin">
+    <datalist id="coinDl"></datalist>
+  </div>
+  <div class="chips" id="coinChips" aria-label="Koin populer"></div>
   <div class="btc-card">
     <div class="btc-price"><b id="btcP">—</b><span class="chip" id="btcCh">—</span></div>
     <div class="btc-chart load" id="btcChart">
@@ -605,7 +632,7 @@ onSnapshot(query(collection(db,'projects'),orderBy('created','desc')),s=>{projec
   </div>
 </div>
 <script>
-/* ===== BITCOIN CHART (tanpa library, lazy-load saat section mendekati layar) ===== */
+/* ===== COIN CHART REALTIME (BTC + pencarian koin, tanpa library, lazy-load saat section mendekati layar) ===== */
 (()=>{
 const $=id=>document.getElementById(id), root=$('bitcoin'), box=$('btcChart'), tip=$('btcTip');
 if(!root)return;
@@ -622,10 +649,52 @@ const getJ=async(u,ms=8000)=>{const c=new AbortController(),t=setTimeout(()=>c.a
   try{const r=await fetch(u,{signal:c.signal});if(!r.ok)throw new Error(r.status);return await r.json()}finally{clearTimeout(t)}};
 const sym=c=>c==='idr'?'BTCIDR':'BTCUSDT';
 
+/* ===== COIN: pilih koin (default BTC) + ikon + pindah ke home HP ===== */
+const QK=[['BTC','bitcoin','Bitcoin'],['ETH','ethereum','Ethereum'],['BNB','binancecoin','BNB'],['SOL','solana','Solana'],['XRP','ripple','XRP'],['DOGE','dogecoin','Dogecoin'],['ADA','cardano','Cardano'],['TON','the-open-network','Toncoin'],['SUI','sui','Sui'],['PEPE','pepe','Pepe']];
+let coin={s:'BTC',n:'Bitcoin'},hb=0;
+const ic={};try{Object.assign(ic,JSON.parse(localStorage.getItem('wd_ci')||'{}'))}catch(e){}
+function icoEl(el,s){el.textContent='';const im=new Image();im.alt='';im.referrerPolicy='no-referrer';
+  im.onerror=()=>{el.textContent=s[0]};
+  im.src=ic[s]||`https://assets.coincap.io/assets/icons/${s.toLowerCase()}@2x.png`;el.appendChild(im)}
+function paintHead(){$('cName').textContent=coin.n;$('cSym').textContent=coin.s;icoEl($('cIco'),coin.s);
+  $('coinChips').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.s===coin.s))}
+function paintChips(){$('coinChips').replaceChildren(...QK.map(q=>{
+  const b=document.createElement('button'),i=document.createElement('i');
+  b.type='button';b.dataset.s=q[0];b.setAttribute('aria-pressed',q[0]===coin.s);i.className='cico';icoEl(i,q[0]);b.append(i,q[0]);
+  b.onclick=()=>{$('coinQ').value='';setCoin(q[0])};return b}))}
+async function loadIcons(){
+  if(QK.every(q=>ic[q[0]]))return;
+  try{const j=await getJ(`${CG}coins/markets?vs_currency=usd&ids=${QK.map(q=>q[1]).join(',')}&per_page=50`,10000);
+    j.forEach(x=>{const q=QK.find(k=>k[1]===x.id);if(q&&x.image)ic[q[0]]=x.image});
+    try{localStorage.setItem('wd_ci',JSON.stringify(ic))}catch(e){}
+    paintChips();paintHead()}catch(e){}}
+function setCoin(v){
+  const s=String(v).toUpperCase().replace(/[^A-Z0-9]/g,'').replace(/USDT$/,'').slice(0,12);
+  if(!s||s===coin.s)return;
+  const k=QK.find(q=>q[0]===s);coin={s,n:k?k[2]:s};
+  data=[];info=null;disconnect();
+  const o=box.querySelector('svg');if(o)o.remove();
+  $('btcP').textContent='—';$('btcCh').textContent='—';$('btcCh').className='chip';
+  paintHead();load(true);connect();
+}
+$('coinDl').innerHTML=QK.map(q=>`<option value="${q[0]}" label="${q[2]}">`).join('');
+const cq=$('coinQ');let cqt=0;
+const goQ=f=>{const v=cq.value.trim();if(v)setCoin(v);else if(f)setCoin('BTC')};
+cq.addEventListener('input',()=>{clearTimeout(cqt);cqt=setTimeout(goQ,700)});
+cq.addEventListener('change',()=>goQ(1));
+cq.addEventListener('keydown',e=>{if(e.key==='Enter'){clearTimeout(cqt);goQ(1);cq.blur()}});
+paintChips();paintHead();setTimeout(loadIcons,2500);
+
+/* di HP (<=900px) bagian ini pindah ke dalam hero (home); di desktop kembali ke bawah hero */
+const slot=$('btcSlot'),mq=matchMedia('(max-width:900px)');
+const place=()=>{if(!slot)return;if(mq.matches){if(root.parentNode!==slot)slot.appendChild(root)}else if(root.parentNode===slot)$('home').after(root)};
+place();mq.addEventListener?mq.addEventListener('change',place):mq.addListener(place);
+
 async function series(c,d){
+  const S=coin.s;
   if(d===0){
     for(const b of BN){try{
-      const a=await getJ(`${b}klines?symbol=BTCUSDT&interval=1m&limit=100`);
+      const a=await getJ(`${b}klines?symbol=${S}USDT&interval=1m&limit=100`);
       if(c!=='idr')return{pts:a.map(k=>[k[0],+k[1],+k[2],+k[3],+k[4]])};
       const f=await getJ(`${b}klines?symbol=USDTIDR&interval=1m&limit=1000`);
       let q=0,rt=+f[0][4];fx=+f[f.length-1][4]||fx;
@@ -633,11 +702,16 @@ async function series(c,d){
     }catch(e){}}
     throw new Error('series');
   }
-  try{const j=await getJ(`${CG}coins/bitcoin/market_chart?vs_currency=${c}&days=${d}`);
-    if(j.prices&&j.prices.length>2)return{pts:j.prices,src:'CoinGecko'}}catch(e){}
+  if(S==='BTC'){
+    try{const j=await getJ(`${CG}coins/bitcoin/market_chart?vs_currency=${c}&days=${d}`);
+      if(j.prices&&j.prices.length>2)return{pts:j.prices,src:'CoinGecko'}}catch(e){}
+  }
   const [iv,lim]=KL[d];
-  for(const b of BN){try{const j=await getJ(`${b}klines?symbol=${sym(c)}&interval=${iv}&limit=${lim}`);
-    return{pts:j.map(k=>[k[0],+k[4]]),src:'Binance'}}catch(e){}}
+  if(c==='idr'&&S!=='BTC')await seedFx(c);
+  for(const b of BN){try{
+    const j=await getJ(`${b}klines?symbol=${S==='BTC'?sym(c):S+'USDT'}&interval=${iv}&limit=${lim}`);
+    const k=(c==='idr'&&S!=='BTC')?fx:1;if(!(k>0))throw new Error('fx');
+    return{pts:j.map(x=>[x[0],+x[4]*k]),src:'Binance'}}catch(e){}}
   throw new Error('series');
 }
 async function seedFx(c){
@@ -645,17 +719,34 @@ async function seedFx(c){
   for(const b of BN){try{const j=await getJ(`${b}ticker/price?symbol=USDTIDR`);fx=+j.price||fx;return}catch(e){}}
 }
 async function ticker(c){
-  try{const j=(await getJ(`${CG}coins/markets?vs_currency=${c}&ids=bitcoin`))[0];
-    return{p:j.current_price,hi:j.high_24h,lo:j.low_24h,mc:j.market_cap,vol:j.total_volume}}catch(e){}
-  for(const b of BN){try{const j=await getJ(`${b}ticker/24hr?symbol=${sym(c)}`);
-    return{p:+j.lastPrice,hi:+j.highPrice,lo:+j.lowPrice,mc:null,vol:+j.quoteVolume}}catch(e){}}
+  const S=coin.s;
+  try{
+    const j=(await getJ(S==='BTC'?`${CG}coins/markets?vs_currency=${c}&ids=bitcoin`:`${CG}coins/markets?vs_currency=${c}&symbols=${S.toLowerCase()}&per_page=1`))[0];
+    if(!j)throw 0;
+    if(coin.s===S){
+      if(j.image&&ic[S]!==j.image){ic[S]=j.image;try{localStorage.setItem('wd_ci',JSON.stringify(ic))}catch(e){}}
+      if(j.name&&S!=='BTC')coin.n=j.name;
+      paintHead();
+    }
+    return{p:j.current_price,hi:j.high_24h,lo:j.low_24h,mc:j.market_cap,vol:j.total_volume}
+  }catch(e){}
+  await seedFx(c);
+  for(const b of BN){try{
+    const j=await getJ(`${b}ticker/24hr?symbol=${S==='BTC'?sym(c):S+'USDT'}`),k=(S!=='BTC'&&c==='idr')?fx:1;
+    if(!(k>0))throw 0;
+    return{p:+j.lastPrice*k,hi:+j.highPrice*k,lo:+j.lowPrice*k,mc:null,vol:+j.quoteVolume*k}}catch(e){}}
   return null;
 }
 
 /* ---- format ---- */
 const loc=()=>cur==='idr'?'id-ID':'en-US';
-const money=v=>new Intl.NumberFormat(loc(),{style:'currency',currency:cur.toUpperCase(),maximumFractionDigits:cur==='idr'?0:2,minimumFractionDigits:cur==='idr'?0:2}).format(v);
-const compact=(v,f=1)=>{try{return new Intl.NumberFormat(loc(),{style:'currency',currency:cur.toUpperCase(),notation:'compact',maximumFractionDigits:f}).format(v)}catch(e){return money(v)}};
+const dgt=v=>{const a=Math.abs(v);return a>=100?2:a>=1?4:a>=.01?5:a>=.0001?7:9};
+const money=v=>{const a=Math.abs(v),d=cur==='idr'?(a>=1000?0:a>=1?2:4):dgt(v);
+  return new Intl.NumberFormat(loc(),{style:'currency',currency:cur.toUpperCase(),minimumFractionDigits:d,maximumFractionDigits:d}).format(v)};
+const compact=(v,f=1)=>{try{
+  const a=Math.abs(v);
+  if(cur==='usd'&&a<10)return new Intl.NumberFormat(loc(),{style:'currency',currency:'USD',minimumFractionDigits:2,maximumFractionDigits:a>=1?3:a>=.01?5:a>=.0001?7:9}).format(v);
+  return new Intl.NumberFormat(loc(),{style:'currency',currency:cur.toUpperCase(),notation:'compact',maximumFractionDigits:f}).format(v)}catch(e){return money(v)}};
 const fmtX=t=>{const d=new Date(t);
   return days<=1?d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})
     :days===365?d.toLocaleDateString('id-ID',{month:'short',year:'2-digit'})
@@ -691,7 +782,7 @@ function draw(){
     sh=`<path d="${ln}L${W} ${H-B}L0 ${H-B}Z" fill="url(#bg)"/><path d="${ln}" fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
   }
   const old=box.querySelector('svg');if(old)old.remove();
-  box.insertAdjacentHTML('afterbegin',`<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="Grafik harga Bitcoin ${LBL[days]}">
+  box.insertAdjacentHTML('afterbegin',`<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="Grafik harga ${coin.n} ${LBL[days]}">
     <defs><linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${col}" stop-opacity=".32"/><stop offset="1" stop-color="${col}" stop-opacity="0"/></linearGradient></defs>
     ${g}${xl}${sh}
     <line id="bx" y1="${T}" y2="${H-B}" stroke="rgba(255,255,255,.35)" stroke-dasharray="3 4" style="display:none"/>
@@ -736,7 +827,7 @@ function paint(redraw=true){
 
 /* ---- ambil data ---- */
 async function load(loud){
-  const id=++rid,key=cur+days,hit=memo.get(key);
+  const id=++rid,key=coin.s+cur+days,hit=memo.get(key);
   if(hit&&Date.now()-hit.t<60000){data=hit.s.pts;info=hit.k;box.classList.remove('load','err');paint();return}
   if(loud){box.classList.add('load');box.classList.remove('err')}
   try{
@@ -744,12 +835,14 @@ async function load(loud){
     if(id!==rid)return;
     const step=Math.ceil(s.pts.length/400);
     data=step>1?s.pts.filter((_,i)=>i%step===0||i===s.pts.length-1):s.pts;
-    info=k?(wsLive&&info?{...k,p:info.p,hi:info.hi,lo:info.lo,vol:info.vol}:k):info;
+    info=k?(wsLive&&info?{...k,p:info.p||k.p,hi:info.hi??k.hi,lo:info.lo??k.lo,vol:info.vol??k.vol}:k):info;
     memo.set(key,{t:Date.now(),s:{pts:data},k:info});
     box.classList.remove('load','err');paint();
   }catch(e){
     if(id!==rid)return;
-    if(!data.length||loud){box.classList.remove('load');box.classList.add('err')}
+    if(!data.length||loud){
+      box.querySelector('.btc-err span').textContent=coin.s==='BTC'?'Data harga belum bisa dimuat.':'Koin '+coin.s+'/USDT tidak ditemukan di Binance, atau datanya belum bisa dimuat.';
+      box.classList.remove('load');box.classList.add('err')}
   }
 }
 
@@ -775,20 +868,22 @@ function onTick(p,t){
   if(prev&&p!==prev){const b=$('btcP');b.className=p>prev?'fu':'fd';clearTimeout(flashT);flashT=setTimeout(()=>b.className='',300)}
   sched();
 }
+/* detak tiap detik: candle 1 menit tetap bergerak walau koin sepi transaksi */
+function beat(){if(days!==0||!data.length||!info||!(info.p>0))return;onTick(info.p,Date.now())}
 function connect(){
   if(ws||!seen||!vis||document.hidden||!('WebSocket' in window))return;
-  const c=cur,s='btcusdt';let w;
+  const c=cur,S=coin.s,s=S.toLowerCase()+'usdt';let w;
   try{w=new WebSocket(WSH[wsHost%WSH.length]+s+'@trade/'+s+'@ticker'+(c==='idr'?'/usdtidr@ticker':''))}catch(e){return}
   ws=w;
-  w.onopen=()=>{wsDelay=1000;live(true)};
-  w.onmessage=e=>{if(c!==cur)return;try{const m=JSON.parse(e.data),j=m.data||m;
+  w.onopen=()=>{wsDelay=1000;live(true);clearInterval(hb);hb=setInterval(beat,1000)};
+  w.onmessage=e=>{if(c!==cur||S!==coin.s)return;try{const m=JSON.parse(e.data),j=m.data||m;
     if(j.s==='USDTIDR'){if(+j.c>0)fx=+j.c;return}
     const k=c==='idr'?fx:1;if(!k)return;
     if(j.e==='trade')onTick(+j.p*k,+j.T);else if(j.e==='24hrTicker')onStat(j,k)}catch(_){}};
-  w.onclose=()=>{if(ws===w){ws=null;live(false);wsHost++;setTimeout(connect,wsDelay);wsDelay=Math.min(wsDelay*2,15000)}};
+  w.onclose=()=>{if(ws===w){ws=null;clearInterval(hb);live(false);wsHost++;setTimeout(connect,wsDelay);wsDelay=Math.min(wsDelay*2,15000)}};
   w.onerror=()=>{try{w.close()}catch(_){}};
 }
-function disconnect(){const w=ws;ws=null;if(w){w.onclose=null;try{w.close()}catch(_){}}live(false)}
+function disconnect(){clearInterval(hb);const w=ws;ws=null;if(w){w.onclose=null;try{w.close()}catch(_){}}live(false)}
 document.addEventListener('visibilitychange',()=>{if(document.hidden)disconnect();else if(vis){load(false);connect()}});
 
 /* ---- kontrol ---- */
