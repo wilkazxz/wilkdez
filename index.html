@@ -176,6 +176,9 @@ h1 span{display:block;background:linear-gradient(180deg,#fff 0,#8d8d8d 100%);-we
 .scr-meta button{padding:6px 14px;border-radius:999px;border:1px solid var(--line);color:#fff;font-size:.82rem}
 .fng{padding:4px 12px;border-radius:999px;border:1px solid var(--line);font-size:.8rem;color:#fff}
 .fng.f{color:#ff5c6c}.fng.g{color:#2ee59d}.fng.n{color:#ffd166}
+.scr-q{flex:1 1 220px;min-width:0;height:46px;padding:0 18px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.05);color:#fff;font:inherit;font-size:16px;outline:0;-webkit-user-select:text;user-select:text}
+.scr-q::placeholder{color:var(--muted)}
+.scr-q:focus{border-color:#fff}
 .scr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:16px}
 .sc{border:1px solid var(--line);border-radius:22px;background:rgba(255,255,255,.04);padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
 .sc-h{display:flex;align-items:center;gap:12px}
@@ -593,6 +596,8 @@ onSnapshot(query(collection(db,'projects'),orderBy('created','desc')),s=>{projec
         <button type="button" data-v="LONG" aria-pressed="false">Long</button>
         <button type="button" data-v="SHORT" aria-pressed="false">Short</button>
       </div>
+      <input class="scr-q" id="scrQ" type="search" enterkeyhint="search" placeholder="Cari koin: BTC, XRP, SOL…" autocomplete="off" autocapitalize="characters" spellcheck="false" list="scrDl" aria-label="Cari koin">
+      <datalist id="scrDl"></datalist>
     </div>
     <div class="scr-meta"><span id="scrMeta">Menganalisis…</span><span class="fng" id="scrFng" hidden></span><button type="button" id="scrRef">Refresh</button></div>
     <div class="scr-grid" id="scrGrid"></div>
@@ -814,12 +819,13 @@ if(!ov)return;
 /* simbol Binance -> id CoinGecko */
 const CG_ID={BTC:'bitcoin',ETH:'ethereum',BNB:'binancecoin',SOL:'solana',XRP:'ripple',DOGE:'dogecoin',ADA:'cardano',AVAX:'avalanche-2',LINK:'chainlink',TON:'the-open-network',DOT:'polkadot',TRX:'tron',LTC:'litecoin',NEAR:'near',SUI:'sui',APT:'aptos',ARB:'arbitrum',OP:'optimism',INJ:'injective-protocol',PEPE:'pepe',AAVE:'aave',UNI:'uniswap',ATOM:'cosmos',FIL:'filecoin'};
 const COINS=Object.keys(CG_ID), ID2S=Object.fromEntries(COINS.map(s=>[CG_ID[s],s]));
-const PERP=s=>s==='PEPE'?'1000PEPEUSDT':s+'USDT';
+const PERP=s=>fr[s+'USDT']!=null?s+'USDT':fr['1000'+s+'USDT']!=null?'1000'+s+'USDT':s+'USDT';
 const BN=['https://data-api.binance.vision/api/v3/','https://api.binance.com/api/v3/'];
 const WSH=['wss://stream.binance.com:9443/stream?streams=','wss://data-stream.binance.vision/stream?streams='];
 const HT={'5m':'1h','15m':'1h','1h':'4h','4h':'1d'}, HL={'1h':'1j','4h':'4j','1d':'1H'};
 let tf='15m',flt='all',res=[],okN=0,isOpen=false,tk=0,timer=null,ws=null,wsOn=false,wsHost=0,wsDelay=1000,hostI=0,raf=0,at='';
-let store={},fund=null,fundAt=0,fundOld=false,fr={},fng=null,fngAt=0;
+let store={},fund=null,fundAt=0,fundOld=false,fr={},fng=null,fngAt=0,q='',qres=null;
+const fxs={};
 const px={},dirty=new Set(),hc={};
 
 const getJ=async(u,ms=9000)=>{const c=new AbortController(),t=setTimeout(()=>c.abort(),ms);
@@ -855,6 +861,20 @@ async function loadFr(){
 async function loadFng(){
   if(fng&&Date.now()-fngAt<18e5)return;
   try{const j=await getJ('https://api.alternative.me/fng/?limit=1',8000),d=j.data[0];fng={v:+d.value,t:d.value_classification};fngAt=Date.now()}catch(e){}
+}
+
+/* fundamental untuk koin hasil pencarian yang tidak ada di daftar utama (CoinGecko, ambil market cap terbesar untuk simbol itu) */
+async function loadFundOne(s){
+  if(CG_ID[s]){await loadFund();return}
+  if(fund&&fund[s]&&fxs[s]&&Date.now()-fxs[s]<6e5)return;
+  try{
+    const j=await getJ(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&symbols=${s.toLowerCase()}&per_page=5&sparkline=false&price_change_percentage=7d,30d,200d,1y`,12000);
+    const x=j&&j[0];if(!x)return;
+    fund=fund||{};
+    fund[s]={rank:x.market_cap_rank,mc:x.market_cap,fdv:x.fully_diluted_valuation,vol:x.total_volume,ath:x.ath_change_percentage,img:x.image,
+      d7:x.price_change_percentage_7d_in_currency,d30:x.price_change_percentage_30d_in_currency,d200:x.price_change_percentage_200d_in_currency};
+    fxs[s]=Date.now();
+  }catch(e){}
 }
 
 /* ---- indikator ---- */
@@ -995,14 +1015,42 @@ const card=c=>{const p=px[c.s]||c.last,st=stat(c,p),tg=c.tags.map(t=>[t,'']).con
 function render(){
   const meta=$('scrMeta'),fg=$('scrFng');
   if(fng){fg.hidden=false;fg.className='fng '+(fng.v<=40?'f':fng.v>=60?'g':'n');fg.textContent='Fear & Greed '+fng.v+' · '+fng.t}else fg.hidden=true;
+  if(q)return renderQ();
   if(res===null){meta.textContent='Gagal memuat data.';grid.innerHTML='<div class="scr-empty">Data pasar belum bisa dimuat.<br><button type="button" class="retry">Coba lagi</button></div>';return}
   const list=res.filter(c=>flt==='all'||c.dir===flt);
   meta.textContent=`${res.length} setup dari ${okN} koin · ${tf.replace('h','j')} · diperbarui ${at}`+(fund?(fundOld?' · fundamental dari cache lama':''):' · fundamental tidak tersedia (skor teknikal saja)');
   grid.innerHTML=list.length?list.map(card).join(''):'<div class="scr-empty">Belum ada setup yang cukup kuat di timeframe ini. Coba timeframe lain atau tunggu candle berikutnya.</div>';
 }
 
+/* ---- pencarian satu koin: tampil kartu kalau ada zona entry, kalau tidak ada pesan ---- */
+function renderQ(){
+  const meta=$('scrMeta'),tl=tf.replace('h','j');
+  if(!qres||qres.s!==q){meta.textContent=`Menganalisis ${q}/USDT…`;grid.innerHTML='';return}
+  if(qres.err){meta.textContent=`Pencarian ${q}/USDT`;grid.innerHTML=`<div class="scr-empty">${qres.err}</div>`;return}
+  meta.textContent=`Pencarian ${q}/USDT · ${tl} · diperbarui ${at}`;
+  grid.innerHTML=qres.c?card(qres.c):`<div class="scr-empty">Belum jumpa zona baiknya untuk ${q}/USDT di timeframe ${tl}.<br>Coba timeframe lain atau tunggu candle berikutnya.</div>`;
+}
+async function runQ(){
+  const id=++tk,t=tf,s=q;
+  if(!qres||qres.s!==s)renderQ();
+  const cs=await kl(s,t);
+  if(id!==tk||!isOpen||q!==s)return;
+  if(!cs){qres={s,err:`Koin ${s} tidak ditemukan di Binance (pasangan USDT) atau datanya belum bisa dimuat.`};renderQ();return}
+  if(cs.length<60){qres={s,err:`Data candle ${s} belum cukup untuk dianalisis (koin terlalu baru).`};renderQ();return}
+  const [h]=await Promise.all([htf(s,t),loadFundOne(s),loadFr(),loadFng()]);
+  if(id!==tk||!isOpen||q!==s)return;
+  store[s]=cs;px[s]=cs[cs.length-1].c;
+  let c=analyze(s,cs,h);
+  if(c){const f=fscore(s,c.dir);c.fs=f?f.score:null;c.ftags=f?f.tags:[];
+    c.total=f?+(.65*c.tech+.35*f.score).toFixed(1):+c.tech.toFixed(1);if(c.total<5.5)c=null}
+  qres={s,c};
+  at=new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  renderQ();
+}
+
 /* ---- jalankan analisa semua koin ---- */
 async function run(){
+  if(q)return runQ();
   const id=++tk,t=tf;
   if(!res||!res.length)$('scrMeta').textContent=`Menganalisis ${COINS.length} koin…`;
   const [all]=await Promise.all([Promise.all(COINS.map(c=>kl(c,t).then(cs=>({c,cs})))),loadFund(),loadFr(),loadFng()]);
@@ -1022,7 +1070,7 @@ async function run(){
 
 /* ---- candle + harga live (WebSocket kline) ---- */
 function paintLive(){raf=0;dirty.forEach(s=>{
-  const el=grid.querySelector(`[data-s="${s}"]`),c=res&&res.find(x=>x.s===s);if(!el||!c)return;
+  const el=grid.querySelector(`[data-s="${s}"]`),c=q?(qres&&qres.c&&qres.c.s===s?qres.c:null):(res&&res.find(x=>x.s===s));if(!el||!c)return;
   const p=px[s],st=stat(c,p);
   el.querySelector('.cc').innerHTML=candles(c);
   el.querySelector('.lp').textContent=fp(p);
@@ -1030,7 +1078,7 @@ function paintLive(){raf=0;dirty.forEach(s=>{
   const e=el.querySelector('.st');e.className='st '+st.k;e.textContent=st.t});dirty.clear()}
 function wsStart(){
   if(ws||!isOpen||!('WebSocket' in window))return;
-  let w;try{w=new WebSocket(WSH[wsHost%WSH.length]+COINS.map(c=>c.toLowerCase()+'usdt@kline_'+tf).join('/'))}catch(e){return}
+  let w;try{w=new WebSocket(WSH[wsHost%WSH.length]+(q?[q]:COINS).map(c=>c.toLowerCase()+'usdt@kline_'+tf).join('/'))}catch(e){return}
   ws=w;
   w.onopen=()=>{wsDelay=1000;wsOn=true};
   w.onmessage=e=>{try{const j=JSON.parse(e.data).data;if(!j||j.e!=='kline'||j.k.i!==tf)return;
@@ -1063,7 +1111,17 @@ grid.addEventListener('click',e=>{if(e.target.closest('.retry'))run()});
 grid.addEventListener('error',e=>{const im=e.target;if(im.tagName==='IMG'&&im.parentElement.classList.contains('av')){im.parentElement.textContent=im.parentElement.dataset.l}},true);
 function seg(el,fn){el.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
   el.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));fn(b.dataset.v)})}
-seg($('scrTf'),v=>{tf=v;res=[];store={};grid.innerHTML='';wsStop();wsStart();run()});
+seg($('scrTf'),v=>{tf=v;res=[];qres=null;store={};grid.innerHTML='';wsStop();wsStart();run()});
+/* kolom pencarian: ketik BTC / XRP / BTCUSDT, kosongkan untuk kembali ke semua koin */
+$('scrDl').innerHTML=COINS.map(c=>`<option value="${c}">`).join('');
+const qi=$('scrQ');let qt=0;
+function applyQ(){
+  const n=qi.value.toUpperCase().replace(/[^A-Z0-9]/g,'').replace(/USDT$/,'').slice(0,12);
+  if(n===q)return;
+  q=n;qres=null;res=[];grid.innerHTML='';wsStop();wsStart();run();
+}
+qi.addEventListener('input',()=>{clearTimeout(qt);qt=setTimeout(applyQ,350)});
+qi.addEventListener('keydown',e=>{if(e.key==='Enter'){clearTimeout(qt);applyQ();qi.blur()}});
 seg($('scrFl'),v=>{flt=v;if(res)render()});
 })();
 </script>
