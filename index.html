@@ -289,6 +289,21 @@ h1 span{display:block;background:linear-gradient(180deg,#fff 0,#8d8d8d 100%);-we
   .btc-slot .btc{padding:0;margin:0;max-width:none}
   .btc-slot .btc-card{background:rgba(0,0,0,.55);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
 }
+
+/* ===== TAB KRIPTO / SAHAM AS + CHART SAHAM ===== */
+.mk-tabs-wrap{max-width:1200px;margin:0 auto;padding:70px var(--pad) 0}
+.mk .btc{padding-top:22px}
+.mk-tabs.seg{display:flex;width:100%;max-width:340px}
+.mk-tabs button{flex:1}
+.btc[hidden]{display:none}
+.st-msg{position:absolute;inset:0;display:none;align-items:center;justify-content:center;text-align:center;padding:16px;color:var(--muted);font-size:.9rem;pointer-events:none}
+.btc-chart.empty .st-msg{display:flex}
+.btc-chart.empty svg{display:none}
+@media (max-width:900px){
+  .btc-slot .mk-tabs-wrap{padding:0 0 14px}
+  .btc-slot .mk .btc{padding:0}
+  .btc-slot .mk-tabs.seg{max-width:none}
+}
 </style>
 </head>
 <body>
@@ -309,7 +324,8 @@ h1 span{display:block;background:linear-gradient(180deg,#fff 0,#8d8d8d 100%);-we
           <a href="#projects">Semua Project</a><a href="#featured">Featured</a><a href="#latest">Terbaru</a>
         </div>
       </div>
-      <a href="#bitcoin">Market</a>
+      <a href="#market" data-tab="crypto">Market</a>
+      <a href="#market" data-tab="stock">Saham US</a>
       <button type="button" class="mb" data-scr>Screener</button>
       <a href="#gallery">Gallery</a>
       <a href="#about">About</a>
@@ -369,6 +385,11 @@ h1 span{display:block;background:linear-gradient(180deg,#fff 0,#8d8d8d 100%);-we
   </div>
 </header>
 
+<div id="market" class="mk">
+<div class="mk-tabs-wrap"><div class="seg mk-tabs" id="mkTabs" role="group" aria-label="Pilih pasar">
+  <button type="button" data-t="crypto" aria-pressed="true">Kripto</button>
+  <button type="button" data-t="stock" aria-pressed="false">Saham AS</button>
+</div></div>
 <section id="bitcoin" class="btc" aria-label="Chart harga koin">
   <div class="btc-head">
     <div>
@@ -409,6 +430,37 @@ h1 span{display:block;background:linear-gradient(180deg,#fff 0,#8d8d8d 100%);-we
     </div>
   </div>
 </section>
+
+<section id="saham" class="btc" aria-label="Chart saham AS" hidden>
+  <div class="btc-head">
+    <div>
+      <p class="btc-tag"><i class="live"></i>Pasar AS tutup</p>
+      <h2><i class="cico" id="sIco">A</i><b id="sName">Apple</b><span id="sSym">AAPL</span></h2>
+    </div>
+    <div class="btc-ctl"><span class="chip">Candle 1 menit · USD</span></div>
+  </div>
+  <div class="coin-bar">
+    <input class="scr-q" id="stQ" type="search" enterkeyhint="search" placeholder="Cari saham: AAPL, TSLA, NVDA…" autocomplete="off" autocapitalize="characters" spellcheck="false" list="stDl" aria-label="Cari saham AS">
+    <datalist id="stDl"></datalist>
+  </div>
+  <div class="chips" id="stChips" aria-label="Saham populer"></div>
+  <div class="btc-card">
+    <div class="btc-price"><b id="stP">—</b><span class="chip" id="stCh">—</span></div>
+    <div class="btc-chart load" id="stChart">
+      <div class="tip" id="stTip"></div>
+      <div class="st-msg" id="stMsg"></div>
+      <div class="btc-err"><span id="stErr">Data saham belum bisa dimuat.</span><button type="button" id="stRetry">Coba lagi</button></div>
+    </div>
+    <div class="btc-stats">
+      <div class="bs"><small>Tertinggi hari ini</small><b id="sbHi">—</b></div>
+      <div class="bs"><small>Terendah hari ini</small><b id="sbLo">—</b></div>
+      <div class="bs"><small>Tutup kemarin</small><b id="sbPc">—</b></div>
+      <div class="bs"><small>Market Cap</small><b id="sbMc">—</b></div>
+    </div>
+    <p class="btc-src">Sumber: Finnhub. Chart dibangun dari transaksi live sejak halaman dibuka. Bukan saran investasi.</p>
+  </div>
+</section>
+</div>
 
 <section id="projects" class="pj">
   <h2>Projects</h2>
@@ -686,8 +738,8 @@ cq.addEventListener('keydown',e=>{if(e.key==='Enter'){clearTimeout(cqt);goQ(1);c
 paintChips();paintHead();setTimeout(loadIcons,2500);
 
 /* di HP (<=900px) bagian ini pindah ke dalam hero (home); di desktop kembali ke bawah hero */
-const slot=$('btcSlot'),mq=matchMedia('(max-width:900px)');
-const place=()=>{if(!slot)return;if(mq.matches){if(root.parentNode!==slot)slot.appendChild(root)}else if(root.parentNode===slot)$('home').after(root)};
+const slot=$('btcSlot'),mq=matchMedia('(max-width:900px)'),mkEl=$('market');
+const place=()=>{if(!slot||!mkEl)return;if(mq.matches){if(mkEl.parentNode!==slot)slot.appendChild(mkEl)}else if(mkEl.parentNode===slot)$('home').after(mkEl)};
 place();mq.addEventListener?mq.addEventListener('change',place):mq.addListener(place);
 
 async function series(c,d){
@@ -1228,6 +1280,231 @@ function applyQ(){
 qi.addEventListener('input',()=>{clearTimeout(qt);qt=setTimeout(applyQ,350)});
 qi.addEventListener('keydown',e=>{if(e.key==='Enter'){clearTimeout(qt);applyQ();qi.blur()}});
 seg($('scrFl'),v=>{flt=v;if(res)render()});
+})();
+</script>
+<script src="stock-config.js"></script>
+<script>
+/* ===== SAHAM AS REALTIME (Finnhub) + TAB KRIPTO/SAHAM ===== */
+(()=>{
+const $=id=>document.getElementById(id),mk=$('market'),root=$('saham'),crypto=$('bitcoin'),box=$('stChart'),tip=$('stTip');
+if(!mk||!root||!crypto)return;
+const KEY=String(window.FINNHUB_KEY||'').trim(),FH='https://finnhub.io/api/v1/';
+const QK=[['AAPL','Apple'],['MSFT','Microsoft'],['NVDA','NVIDIA'],['TSLA','Tesla'],['AMZN','Amazon'],['GOOGL','Alphabet'],['META','Meta'],['AMD','AMD'],['NFLX','Netflix'],['SPY','S&P 500 ETF']];
+let sym='AAPL',nm='Apple',meta={},data=[],info=null,ws=null,wsLive=false,wsDelay=1000,lastTick=0,lastQ=0,qb=false,raf=0,lastDraw=0,hov=false,flashT=0,active=false,rid=0,t1=0;
+const ic={};try{Object.assign(ic,JSON.parse(localStorage.getItem('wd_si')||'{}'))}catch(e){}
+const saveIc=()=>{try{localStorage.setItem('wd_si',JSON.stringify(ic))}catch(e){}};
+const getJ=async(u,ms=8000)=>{const c=new AbortController(),t=setTimeout(()=>c.abort(),ms);
+  try{const r=await fetch(u,{signal:c.signal});if(!r.ok)throw new Error(r.status);return await r.json()}finally{clearTimeout(t)}};
+
+/* ---- format ---- */
+const money=v=>v==null||isNaN(v)?'—':'$'+v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:v<1?4:2});
+const cmp=v=>v==null||isNaN(v)?'—':'$'+new Intl.NumberFormat('en-US',{notation:'compact',maximumFractionDigits:2}).format(v);
+const fmtT=t=>new Date(t).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+function nyOpen(){
+  const f=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',weekday:'short',hour:'numeric',minute:'numeric',hour12:false}).formatToParts(new Date()),g=k=>f.find(x=>x.type===k).value;
+  const m=(+g('hour')%24)*60+(+g('minute'));
+  return !['Sat','Sun'].includes(g('weekday'))&&m>=570&&m<960;
+}
+
+/* ---- tab Kripto / Saham AS ---- */
+const tabs=$('mkTabs');
+function setTab(t){
+  crypto.hidden=t!=='crypto';root.hidden=t!=='stock';
+  tabs.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.t===t));
+  if(t==='stock')startSt();else stopSt();
+}
+tabs.addEventListener('click',e=>{const b=e.target.closest('button');if(b)setTab(b.dataset.t)});
+document.querySelectorAll('[data-tab]').forEach(a=>a.addEventListener('click',()=>setTab(a.dataset.tab)));
+
+/* ---- ikon + kepala ---- */
+function icoEl(el,s){el.textContent='';const im=new Image();im.alt='';im.referrerPolicy='no-referrer';
+  im.onerror=()=>{el.textContent=s[0]};
+  im.src=ic[s]||`https://financialmodelingprep.com/image-stock/${encodeURIComponent(s)}.png`;el.appendChild(im)}
+function paintHead(){$('sName').textContent=nm;$('sSym').textContent=sym;icoEl($('sIco'),sym);
+  $('stChips').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.s===sym))}
+function paintChips(){$('stChips').replaceChildren(...QK.map(q=>{
+  const b=document.createElement('button'),i=document.createElement('i');
+  b.type='button';b.dataset.s=q[0];b.setAttribute('aria-pressed',q[0]===sym);i.className='cico';icoEl(i,q[0]);b.append(i,q[0]);
+  b.onclick=()=>{$('stQ').value='';setSym(q[0])};return b}))}
+
+/* ---- data Finnhub ---- */
+async function quote(S){
+  const j=await getJ(`${FH}quote?symbol=${encodeURIComponent(S)}&token=${encodeURIComponent(KEY)}`);
+  if(!j||!(j.c>0))throw new Error('nodata');
+  return j;
+}
+async function profile(S){
+  try{const j=await getJ(`${FH}stock/profile2?symbol=${encodeURIComponent(S)}&token=${encodeURIComponent(KEY)}`);
+    if(S!==sym||!j||!j.name)return;
+    nm=j.name;meta={mc:j.marketCapitalization?j.marketCapitalization*1e6:null};
+    if(j.logo&&ic[S]!==j.logo){ic[S]=j.logo;saveIc()}
+    paintHead();
+  }catch(e){}
+}
+function errShow(m){$('stErr').textContent=m;box.classList.remove('load','empty');box.classList.add('err')}
+async function loadSt(){
+  const id=++rid,S=sym;
+  if(!KEY){errShow('API key Finnhub belum diisi. Isi FINNHUB_KEY di file stock-config.js.');return}
+  if(!info)box.classList.add('load');
+  box.classList.remove('err');
+  try{
+    const [q]=await Promise.all([quote(S),profile(S)]);
+    if(id!==rid||S!==sym)return;
+    info=Object.assign({},info,{pc:q.pc,hi:q.h,lo:q.l,op:q.o,mc:meta.mc});
+    if(!info.p||Date.now()-lastTick>8000)info.p=q.c;
+    lastQ=Date.now();box.classList.remove('load');paint();status();
+  }catch(e){
+    if(id!==rid)return;
+    errShow('Saham '+S+' tidak ditemukan di bursa AS, atau batas request Finnhub tercapai.');
+  }
+}
+async function refreshQ(){
+  if(qb)return;qb=true;lastQ=Date.now();const S=sym;
+  try{const q=await quote(S);if(S!==sym)return;
+    info=Object.assign({},info,{pc:q.pc,hi:q.h,lo:q.l,op:q.o});
+    if(Date.now()-lastTick>8000){if(nyOpen())onTick(q.c,Date.now());else info.p=q.c}
+    sched();
+  }catch(e){}
+  qb=false;
+}
+
+/* ---- gambar candle 1 menit (60 menit terakhir, kanan = terbaru) ---- */
+function draw(){
+  const n=data.length;if(!n)return;
+  const W=box.clientWidth||600,H=W<520?240:340,T=12,B=26,SL=60;
+  const t0=data[n-1][0]-(SL-1)*6e4,vs=data.filter(d=>d[0]>=t0);
+  let mn=Math.min(...vs.map(d=>d[3])),mx=Math.max(...vs.map(d=>d[2]));
+  const pad=(mx-mn)*.08||mx*.002;mn-=pad;mx+=pad;
+  const cw=W/SL,X=t=>(t-t0)/6e4*cw+cw/2,Y=v=>T+(1-(v-mn)/(mx-mn))*(H-T-B);
+  const lastV=vs[vs.length-1][4],col=lastV>=vs[0][1]?'#2ee59d':'#ff5c6c',bw=Math.max(1,cw*.66);
+  let g='';
+  for(let k=0;k<=3;k++){const v=mn+(mx-mn)*k/3,y=Y(v).toFixed(1);
+    g+=`<line x1="0" x2="${W}" y1="${y}" y2="${y}" stroke="rgba(255,255,255,.08)"/><text x="0" y="${y-5}">${money(v)}</text>`}
+  let xl='';
+  for(let k=0;k<4;k++){const t=t0+k*(SL-1)*6e4/3,a=k===0?'start':k===3?'end':'middle';
+    xl+=`<text x="${X(t).toFixed(1)}" y="${H-6}" text-anchor="${a}">${fmtT(t)}</text>`}
+  let sh='';
+  vs.forEach(d=>{const x=X(d[0]),cl=d[4]>=d[1]?'#2ee59d':'#ff5c6c',yo=Y(d[1]),yc=Y(d[4]);
+    sh+=`<line x1="${x.toFixed(1)}" x2="${x.toFixed(1)}" y1="${Y(d[2]).toFixed(1)}" y2="${Y(d[3]).toFixed(1)}" stroke="${cl}" stroke-width="1.2"/><rect x="${(x-bw/2).toFixed(1)}" y="${Math.min(yo,yc).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(1,Math.abs(yo-yc)).toFixed(1)}" fill="${cl}"/>`});
+  const ly=Y(lastV).toFixed(1);
+  sh+=`<line x1="0" x2="${W}" y1="${ly}" y2="${ly}" stroke="${col}" stroke-dasharray="2 4" opacity=".7"/><text x="${W}" y="${ly-5}" text-anchor="end" style="fill:${col}">${money(lastV)}</text>`;
+  const old=box.querySelector('svg');if(old)old.remove();
+  box.insertAdjacentHTML('afterbegin',`<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="Grafik harga ${nm} candle 1 menit">${g}${xl}${sh}
+    <line id="sbx" y1="${T}" y2="${H-B}" stroke="rgba(255,255,255,.35)" stroke-dasharray="3 4" style="display:none"/>
+    <circle id="sbd" r="5" fill="${col}" stroke="#000" stroke-width="2" style="display:none"/></svg>`);
+  box._m={W,cw,t0,X,Y};
+}
+function hover(e){
+  const m=box._m;if(!m||!data.length)return;hov=true;
+  const r=box.getBoundingClientRect(),px=Math.max(0,Math.min(m.W,(e.clientX-r.left)*(m.W/r.width)));
+  const t=m.t0+Math.floor(px/m.cw)*6e4,d=data.find(x=>x[0]===t),bx=$('sbx'),bd=$('sbd');if(!bx)return;
+  if(!d){bx.style.display='none';bd.style.display='none';tip.style.opacity=0;return}
+  const x=m.X(d[0]),y=m.Y(d[4]);
+  bx.setAttribute('x1',x);bx.setAttribute('x2',x);bx.style.display='';
+  bd.setAttribute('cx',x);bd.setAttribute('cy',y);bd.style.display='';
+  tip.innerHTML=`<b>${money(d[4])}</b><small>B ${money(d[1])} · T ${money(d[2])} · R ${money(d[3])}</small><small>${fmtT(d[0])}</small>`;
+  const tw=tip.offsetWidth,sx=x*(r.width/m.W);
+  tip.style.transform=`translateX(${Math.max(0,Math.min(r.width-tw,sx-tw/2))}px)`;tip.style.opacity=1;
+}
+function leave(){hov=false;tip.style.opacity=0;const bx=$('sbx'),bd=$('sbd');if(bx)bx.style.display='none';if(bd)bd.style.display='none'}
+box.addEventListener('pointermove',hover);box.addEventListener('pointerdown',hover);
+box.addEventListener('pointerleave',leave);box.addEventListener('pointercancel',leave);
+
+/* ---- isi angka ---- */
+function paint(redraw=true){
+  const p=info&&info.p;
+  $('stP').textContent=p?money(p):'—';
+  const ch=$('stCh');
+  if(info&&info.pc>0&&p){const d=p-info.pc,pct=d/info.pc*100,up=d>=0;ch.className='chip '+(up?'up':'dn');ch.textContent=(up?'▲ ':'▼ ')+Math.abs(pct).toFixed(2)+'% · hari ini'}
+  else{ch.className='chip';ch.textContent='—'}
+  $('sbHi').textContent=info?money(info.hi):'—';$('sbLo').textContent=info?money(info.lo):'—';
+  $('sbPc').textContent=info?money(info.pc):'—';$('sbMc').textContent=info?cmp(info.mc):'—';
+  box.classList.toggle('empty',!data.length&&!box.classList.contains('err')&&!box.classList.contains('load'));
+  if(redraw&&data.length)draw();
+}
+function sched(){if(raf)return;
+  raf=setTimeout(()=>{raf=0;lastDraw=performance.now();requestAnimationFrame(()=>paint(!hov))},Math.max(0,100-(performance.now()-lastDraw)))}
+function status(){
+  const t=root.querySelector('.btc-tag'),d=root.querySelector('.live'),fresh=Date.now()-lastTick<120000,open=nyOpen();
+  let s,c;
+  if(fresh){s=wsLive?'Live · Saham AS':'Live · polling';c='#2ee59d'}
+  else if(open){s=wsLive?'Menunggu transaksi…':'Menyambung…';c='#ffd166'}
+  else{s='Pasar AS tutup';c='#888'}
+  if(t.lastChild.textContent!==s)t.lastChild.textContent=s;
+  d.style.background=c;
+  $('stMsg').textContent=open?'Menunggu transaksi pertama…':'Pasar AS sedang tutup. Chart live berjalan saat jam bursa AS (sekitar 20.30–04.00 WIB).';
+}
+
+/* ---- tick realtime -> candle 1 menit ---- */
+function onTick(p,t){
+  if(!(p>0))return;
+  const now=t||Date.now(),prev=info&&info.p;
+  info=Object.assign({},info,{p});lastTick=Date.now();
+  if(info.hi>0&&p>info.hi)info.hi=p;
+  if(info.lo>0&&p<info.lo)info.lo=p;
+  const mt=Math.floor(now/6e4)*6e4,lc=data[data.length-1];
+  if(!lc||mt>lc[0]){const o=lc?lc[4]:p;data.push([mt,o,Math.max(o,p),Math.min(o,p),p]);while(data.length>120)data.shift()}
+  else{lc[4]=p;if(p>lc[2])lc[2]=p;if(p<lc[3])lc[3]=p}
+  if(prev&&p!==prev){const b=$('stP');b.className=p>prev?'fu':'fd';clearTimeout(flashT);flashT=setTimeout(()=>b.className='',300)}
+  sched();
+}
+/* tiap detik: candle baru muncul tepat waktu walau sahamnya sepi transaksi */
+function beat(){
+  if(!data.length||Date.now()-lastTick>3e5)return;
+  const mt=Math.floor(Date.now()/6e4)*6e4,lc=data[data.length-1];
+  if(mt>lc[0]){const o=lc[4];data.push([mt,o,o,o,o]);while(data.length>120)data.shift();sched()}
+}
+function tick1(){
+  beat();status();
+  if(document.hidden||!KEY)return;
+  const fresh=Date.now()-lastTick<120000,gap=fresh?20000:nyOpen()?4000:30000;
+  if(Date.now()-lastQ>=gap)refreshQ();
+}
+
+/* ---- WebSocket Finnhub ---- */
+function wsSub(S,on){if(ws&&ws.readyState===1)ws.send(JSON.stringify({type:on?'subscribe':'unsubscribe',symbol:S}))}
+function wsConnect(){
+  if(ws||!active||!KEY||!('WebSocket' in window))return;
+  let w,to,opened=false;
+  try{w=new WebSocket('wss://ws.finnhub.io?token='+encodeURIComponent(KEY))}catch(e){return}
+  ws=w;
+  to=setTimeout(()=>{if(ws===w&&!opened){try{w.close()}catch(_){}}},5000);
+  w.onopen=()=>{opened=true;clearTimeout(to);wsDelay=1000;wsLive=true;wsSub(sym,true);status()};
+  w.onmessage=e=>{try{const m=JSON.parse(e.data);if(m.type!=='trade'||!m.data)return;
+    m.data.forEach(x=>{if(x.s===sym&&x.p>0)onTick(+x.p,+x.t)})}catch(_){}};
+  w.onclose=()=>{clearTimeout(to);if(ws===w){ws=null;wsLive=false;status();if(active)setTimeout(wsConnect,wsDelay);wsDelay=Math.min(wsDelay*2,15000)}};
+  w.onerror=()=>{try{w.close()}catch(_){}};
+}
+function wsStop(){const w=ws;ws=null;wsLive=false;if(w){w.onclose=null;try{w.close()}catch(_){}}}
+document.addEventListener('visibilitychange',()=>{if(!active)return;if(document.hidden)wsStop();else{wsConnect();refreshQ()}});
+
+/* ---- pilih saham ---- */
+function setSym(v){
+  const s=String(v).toUpperCase().replace(/[^A-Z.\-]/g,'').slice(0,10);
+  if(!s||s===sym)return;
+  wsSub(sym,false);
+  const k=QK.find(q=>q[0]===s);
+  sym=s;nm=k?k[1]:s;meta={};data=[];info=null;lastTick=0;lastQ=0;
+  const o=box.querySelector('svg');if(o)o.remove();
+  $('stP').textContent='—';$('stCh').textContent='—';$('stCh').className='chip';
+  paintHead();loadSt();wsSub(s,true);
+}
+$('stDl').innerHTML=QK.map(q=>`<option value="${q[0]}" label="${q[1]}">`).join('');
+const sq=$('stQ');let sqt=0;
+const goQ=f=>{const v=sq.value.trim();if(v)setSym(v);else if(f)setSym('AAPL')};
+sq.addEventListener('input',()=>{clearTimeout(sqt);sqt=setTimeout(goQ,700)});
+sq.addEventListener('change',()=>goQ(1));
+sq.addEventListener('keydown',e=>{if(e.key==='Enter'){clearTimeout(sqt);goQ(1);sq.blur()}});
+$('stRetry').onclick=()=>{box.classList.remove('err');loadSt()};
+if('ResizeObserver' in window){let w=0;new ResizeObserver(()=>{const n=box.clientWidth;if(n!==w){w=n;if(data.length)draw()}}).observe(box)}
+
+function startSt(){
+  active=true;clearInterval(t1);
+  if(!KEY){errShow('API key Finnhub belum diisi. Isi FINNHUB_KEY di file stock-config.js.');return}
+  loadSt();wsConnect();t1=setInterval(tick1,1000);
+}
+function stopSt(){active=false;clearInterval(t1);wsStop()}
+$('stDl');paintChips();paintHead();
 })();
 </script>
 </body>
