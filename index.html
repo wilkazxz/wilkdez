@@ -176,6 +176,7 @@ h1 span{display:block;background:linear-gradient(180deg,#fff 0,#8d8d8d 100%);-we
 .btc-card{margin-top:22px;border:1px solid var(--line);border-radius:24px;background:rgba(255,255,255,.04);padding:clamp(16px,3vw,28px)}
 .btc-price{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px 14px}
 .btc-price b{font-size:clamp(1.8rem,5vw,3rem);font-weight:600;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.btc-price b{transition:color .6s}.btc-price b.fu{color:#2ee59d;transition:none}.btc-price b.fd{color:#ff5c6c;transition:none}
 .chip{padding:4px 12px;border-radius:999px;font-size:.9rem;font-weight:500;background:rgba(255,255,255,.1);min-height:28px}
 .chip.up{color:#2ee59d;background:rgba(46,229,157,.12)}
 .chip.dn{color:#ff5c6c;background:rgba(255,92,108,.12)}
@@ -305,7 +306,6 @@ h1 span{display:block;background:linear-gradient(180deg,#fff 0,#8d8d8d 100%);-we
       <div class="bs"><small>Market Cap</small><b id="bsMc">—</b></div>
       <div class="bs"><small>Volume 24J</small><b id="bsVol">—</b></div>
     </div>
-    <p class="btc-src" id="btcSrc">Memuat data…</p>
   </div>
 </section>
 
@@ -506,7 +506,9 @@ onSnapshot(query(collection(db,'projects'),orderBy('created','desc')),s=>{projec
 (()=>{
 const $=id=>document.getElementById(id), root=$('bitcoin'), box=$('btcChart'), tip=$('btcTip');
 if(!root)return;
-let cur='usd', days=1, data=[], info=null, rid=0, timer=null, seen=false;
+let cur='usd', days=1, data=[], info=null, rid=0, timer=null, seen=false, vis=false, hov=false;
+let ws=null, wsLive=false, wsDelay=1000, wsHost=0, raf=0, flashT=0;
+const WSH=['wss://stream.binance.com:9443/ws/','wss://data-stream.binance.vision/ws/'];
 const CG='https://api.coingecko.com/api/v3/';
 const BN=['https://data-api.binance.vision/api/v3/','https://api.binance.com/api/v3/'];
 const KL={1:['5m',288],7:['1h',168],30:['4h',180],365:['1d',365]};
@@ -572,7 +574,7 @@ function draw(){
 
 /* ---- hover / sentuh ---- */
 function hover(e){
-  const m=box._m;if(!m||!data.length)return;
+  const m=box._m;if(!m||!data.length)return;hov=true;
   const r=box.getBoundingClientRect(),px=Math.max(0,Math.min(m.W,(e.clientX-r.left)*(m.W/r.width)));
   const t=m.xs[0]+px/m.W*(m.xs[m.xs.length-1]-m.xs[0]);
   let lo=0,hi=m.xs.length-1;while(hi-lo>1){const mid=(lo+hi)>>1;m.xs[mid]<t?lo=mid:hi=mid}
@@ -584,12 +586,12 @@ function hover(e){
   const tw=tip.offsetWidth,sx=x*(r.width/m.W);
   tip.style.transform=`translateX(${Math.max(0,Math.min(r.width-tw,sx-tw/2))}px)`;tip.style.opacity=1;
 }
-function leave(){tip.style.opacity=0;const bx=$('bx'),bd=$('bd');if(bx)bx.style.display='none';if(bd)bd.style.display='none'}
+function leave(){hov=false;tip.style.opacity=0;const bx=$('bx'),bd=$('bd');if(bx)bx.style.display='none';if(bd)bd.style.display='none'}
 box.addEventListener('pointermove',hover);box.addEventListener('pointerdown',hover);
 box.addEventListener('pointerleave',leave);box.addEventListener('pointercancel',leave);
 
 /* ---- isi angka ---- */
-function paint(){
+function paint(redraw=true){
   const last=data[data.length-1][1],first=data[0][1],pct=(last-first)/first*100,up=pct>=0;
   $('btcP').textContent=money(info&&info.p?info.p:last);
   const ch=$('btcCh');ch.className='chip '+(up?'up':'dn');
@@ -597,45 +599,71 @@ function paint(){
   const v=x=>x==null||isNaN(x)?'—':compact(x,2);
   $('bsHi').textContent=info?v(info.hi):'—';$('bsLo').textContent=info?v(info.lo):'—';
   $('bsMc').textContent=info?v(info.mc):'—';$('bsVol').textContent=info?v(info.vol):'—';
-  draw();
+  if(redraw)draw();
 }
 
 /* ---- ambil data ---- */
 async function load(loud){
   const id=++rid,key=cur+days,hit=memo.get(key);
-  if(hit&&Date.now()-hit.t<60000){data=hit.s.pts;info=hit.k;box.classList.remove('load','err');paint();$('btcSrc').textContent=hit.src;return}
+  if(hit&&Date.now()-hit.t<60000){data=hit.s.pts;info=hit.k;box.classList.remove('load','err');paint();return}
   if(loud){box.classList.add('load');box.classList.remove('err')}
   try{
     const [s,k]=await Promise.all([series(cur,days),ticker(cur)]);
     if(id!==rid)return;
     const step=Math.ceil(s.pts.length/400);
-    data=step>1?s.pts.filter((_,i)=>i%step===0||i===s.pts.length-1):s.pts;info=k;
-    const now=new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-    const src=`Sumber: ${s.src} · diperbarui ${now}`;
-    memo.set(key,{t:Date.now(),s:{pts:data},k,src});
-    box.classList.remove('load','err');paint();$('btcSrc').textContent=src;
+    data=step>1?s.pts.filter((_,i)=>i%step===0||i===s.pts.length-1):s.pts;
+    info=k?(wsLive&&info?{...k,p:info.p,hi:info.hi,lo:info.lo,vol:info.vol}:k):info;
+    memo.set(key,{t:Date.now(),s:{pts:data},k:info});
+    box.classList.remove('load','err');paint();
   }catch(e){
     if(id!==rid)return;
-    if(!data.length||loud){box.classList.remove('load');box.classList.add('err');$('btcSrc').textContent='Gagal memuat data.'}
+    if(!data.length||loud){box.classList.remove('load');box.classList.add('err')}
   }
 }
+
+
+/* ---- REALTIME (WebSocket): harga berdetak tiap detik, garis chart ikut bergerak ---- */
+function live(on){wsLive=on;const t=root.querySelector('.btc-tag');if(t)t.lastChild.textContent=on?'Live Market':'Menyambung…';
+  const d=root.querySelector('.live');if(d)d.style.background=on?'#2ee59d':'#888'}
+function onTick(p,j){
+  if(!(p>0)||!data.length)return;
+  const prev=info&&info.p;
+  info=Object.assign({},info,{p,hi:+j.h||(info&&info.hi),lo:+j.l||(info&&info.lo),vol:+j.q||(info&&info.vol)});
+  const now=Date.now(),n=data.length,step=(data[n-1][0]-data[0][0])/Math.max(1,n-1)||3e5,lastPt=data[n-1];
+  if(now-lastPt[0]>=step){data.push([now,p]);const cut=now-days*864e5*1.02;while(data.length>10&&data[0][0]<cut)data.shift()}
+  else lastPt[1]=p;
+  if(prev&&p!==prev){const b=$('btcP');b.className=p>prev?'fu':'fd';clearTimeout(flashT);flashT=setTimeout(()=>b.className='',400)}
+  if(!raf)raf=requestAnimationFrame(()=>{raf=0;if(data.length>1)paint(!hov)});
+}
+function connect(){
+  if(ws||!seen||!vis||document.hidden||!('WebSocket' in window))return;
+  const c=cur;let w;
+  try{w=new WebSocket(WSH[wsHost%WSH.length]+sym(c).toLowerCase()+'@ticker')}catch(e){return}
+  ws=w;
+  w.onopen=()=>{wsDelay=1000;live(true)};
+  w.onmessage=e=>{if(c!==cur)return;try{const j=JSON.parse(e.data);onTick(+j.c,j)}catch(_){}};
+  w.onclose=()=>{if(ws===w){ws=null;live(false);wsHost++;setTimeout(connect,wsDelay);wsDelay=Math.min(wsDelay*2,15000)}};
+  w.onerror=()=>{try{w.close()}catch(_){}};
+}
+function disconnect(){const w=ws;ws=null;if(w){w.onclose=null;try{w.close()}catch(_){}}live(false)}
+document.addEventListener('visibilitychange',()=>{if(document.hidden)disconnect();else if(vis){load(false);connect()}});
 
 /* ---- kontrol ---- */
 function seg(el,fn){el.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
   el.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));fn(b.dataset.v);load(true)})}
-seg($('btcCur'),v=>{cur=v;data=[];info=null});
+seg($('btcCur'),v=>{cur=v;data=[];info=null;disconnect();connect()});
 seg($('btcRange'),v=>{days=+v});
 $('btcRetry').onclick=()=>load(true);
 if('ResizeObserver' in window){let w=0;new ResizeObserver(()=>{const n=box.clientWidth;if(n!==w){w=n;if(data.length)draw()}}).observe(box)}
 else addEventListener('resize',()=>data.length&&draw());
 
-/* ---- mulai hanya saat section mendekati layar; refresh tiap 60 dtk saat terlihat ---- */
+/* ---- mulai hanya saat section mendekati layar ---- */
 function start(){if(timer)return;timer=setInterval(()=>{if(!document.hidden)load(false)},60000)}
 function stop(){clearInterval(timer);timer=null}
 if('IntersectionObserver' in window){
-  new IntersectionObserver(es=>{const on=es[0].isIntersecting;
-    if(on){if(!seen){seen=true;load(true)}else load(false);start()}else stop()},{rootMargin:'400px 0px'}).observe(root);
-}else{load(true);start()}
+  new IntersectionObserver(es=>{vis=es[0].isIntersecting;
+    if(vis){if(!seen){seen=true;load(true)}else load(false);start();connect()}else{stop();disconnect()}},{rootMargin:'400px 0px'}).observe(root);
+}else{vis=seen=true;load(true);start();connect()}
 })();
 </script>
 </body>
