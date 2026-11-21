@@ -508,7 +508,7 @@ onSnapshot(query(collection(db,'projects'),orderBy('created','desc')),s=>{projec
 const $=id=>document.getElementById(id), root=$('bitcoin'), box=$('btcChart'), tip=$('btcTip');
 if(!root)return;
 let cur='usd', days=0, data=[], info=null, rid=0, timer=null, seen=false, vis=false, hov=false;
-let ws=null, wsLive=false, wsDelay=1000, wsHost=0, raf=0, flashT=0;
+let fx=0, ws=null, wsLive=false, wsDelay=1000, wsHost=0, raf=0, flashT=0;
 const WSH=['wss://stream.binance.com:9443/stream?streams=','wss://data-stream.binance.vision/stream?streams='];
 const CG='https://api.coingecko.com/api/v3/';
 const BN=['https://data-api.binance.vision/api/v3/','https://api.binance.com/api/v3/'];
@@ -522,8 +522,13 @@ const sym=c=>c==='idr'?'BTCIDR':'BTCUSDT';
 
 async function series(c,d){
   if(d===0){
-    for(const b of BN){try{const j=await getJ(`${b}klines?symbol=${sym(c)}&interval=1m&limit=100`);
-      return{pts:j.map(k=>[k[0],+k[1],+k[2],+k[3],+k[4]])}}catch(e){}}
+    for(const b of BN){try{
+      const a=await getJ(`${b}klines?symbol=BTCUSDT&interval=1m&limit=100`);
+      if(c!=='idr')return{pts:a.map(k=>[k[0],+k[1],+k[2],+k[3],+k[4]])};
+      const f=await getJ(`${b}klines?symbol=USDTIDR&interval=1m&limit=1000`);
+      let q=0,rt=+f[0][4];fx=+f[f.length-1][4]||fx;
+      return{pts:a.map(k=>{while(q<f.length&&f[q][0]<=k[0]){rt=+f[q][4];q++}return[k[0],k[1]*rt,k[2]*rt,k[3]*rt,k[4]*rt]})};
+    }catch(e){}}
     throw new Error('series');
   }
   try{const j=await getJ(`${CG}coins/bitcoin/market_chart?vs_currency=${c}&days=${d}`);
@@ -532,6 +537,10 @@ async function series(c,d){
   for(const b of BN){try{const j=await getJ(`${b}klines?symbol=${sym(c)}&interval=${iv}&limit=${lim}`);
     return{pts:j.map(k=>[k[0],+k[4]]),src:'Binance'}}catch(e){}}
   throw new Error('series');
+}
+async function seedFx(c){
+  if(c!=='idr'||fx)return;
+  for(const b of BN){try{const j=await getJ(`${b}ticker/price?symbol=USDTIDR`);fx=+j.price||fx;return}catch(e){}}
 }
 async function ticker(c){
   try{const j=(await getJ(`${CG}coins/markets?vs_currency=${c}&ids=bitcoin`))[0];
@@ -602,7 +611,7 @@ function hover(e){
   bx.setAttribute('x1',x);bx.setAttribute('x2',x);bx.style.display='';
   bd.setAttribute('cx',x);bd.setAttribute('cy',y);bd.style.display='';
   tip.innerHTML=m.C
-    ?`<b>${money(d[4])}</b><small>B ${compact(d[1],3)} · T ${compact(d[2],3)} · R ${compact(d[3],3)}</small><small>${fmtFull(d[0])}</small>`
+    ?`<b>${money(d[4])}</b><small>B ${compact(d[1],2)} · T ${compact(d[2],2)} · R ${compact(d[3],2)}</small><small>${fmtFull(d[0])}</small>`
     :`<b>${money(pv)}</b><small>${fmtFull(d[0])}</small>`;
   const tw=tip.offsetWidth,sx=x*(r.width/m.W);
   tip.style.transform=`translateX(${Math.max(0,Math.min(r.width-tw,sx-tw/2))}px)`;tip.style.opacity=1;
@@ -629,7 +638,7 @@ async function load(loud){
   if(hit&&Date.now()-hit.t<60000){data=hit.s.pts;info=hit.k;box.classList.remove('load','err');paint();return}
   if(loud){box.classList.add('load');box.classList.remove('err')}
   try{
-    const [s,k]=await Promise.all([series(cur,days),ticker(cur)]);
+    const [s,k]=await Promise.all([series(cur,days),ticker(cur),seedFx(cur)]).then(a=>[a[0],a[1]]);
     if(id!==rid)return;
     const step=Math.ceil(s.pts.length/400);
     data=step>1?s.pts.filter((_,i)=>i%step===0||i===s.pts.length-1):s.pts;
@@ -647,7 +656,7 @@ async function load(loud){
 function live(on){wsLive=on;const t=root.querySelector('.btc-tag');if(t)t.lastChild.textContent=on?'Live Market':'Menyambung…';
   const d=root.querySelector('.live');if(d)d.style.background=on?'#2ee59d':'#888'}
 function sched(){if(!raf)raf=requestAnimationFrame(()=>{raf=0;if(data.length>1)paint(!hov)})}
-function onStat(j){info=Object.assign({},info,{hi:+j.h||(info&&info.hi),lo:+j.l||(info&&info.lo),vol:+j.q||(info&&info.vol)});sched()}
+function onStat(j,k){info=Object.assign({},info,{hi:+j.h*k||(info&&info.hi),lo:+j.l*k||(info&&info.lo),vol:+j.q*k||(info&&info.vol)});sched()}
 function onTick(p,t){
   if(!(p>0)||!data.length)return;
   const prev=info&&info.p,now=t||Date.now(),n=data.length;
@@ -666,12 +675,14 @@ function onTick(p,t){
 }
 function connect(){
   if(ws||!seen||!vis||document.hidden||!('WebSocket' in window))return;
-  const c=cur,s=sym(c).toLowerCase();let w;
-  try{w=new WebSocket(WSH[wsHost%WSH.length]+s+'@trade/'+s+'@ticker')}catch(e){return}
+  const c=cur,s='btcusdt';let w;
+  try{w=new WebSocket(WSH[wsHost%WSH.length]+s+'@trade/'+s+'@ticker'+(c==='idr'?'/usdtidr@ticker':''))}catch(e){return}
   ws=w;
   w.onopen=()=>{wsDelay=1000;live(true)};
   w.onmessage=e=>{if(c!==cur)return;try{const m=JSON.parse(e.data),j=m.data||m;
-    if(j.e==='trade')onTick(+j.p,+j.T);else if(j.e==='24hrTicker')onStat(j)}catch(_){}};
+    if(j.s==='USDTIDR'){if(+j.c>0)fx=+j.c;return}
+    const k=c==='idr'?fx:1;if(!k)return;
+    if(j.e==='trade')onTick(+j.p*k,+j.T);else if(j.e==='24hrTicker')onStat(j,k)}catch(_){}};
   w.onclose=()=>{if(ws===w){ws=null;live(false);wsHost++;setTimeout(connect,wsDelay);wsDelay=Math.min(wsDelay*2,15000)}};
   w.onerror=()=>{try{w.close()}catch(_){}};
 }
@@ -690,6 +701,8 @@ else addEventListener('resize',()=>data.length&&draw());
 /* ---- mulai hanya saat section mendekati layar ---- */
 function start(){if(timer)return;timer=setInterval(()=>{if(!document.hidden)load(false)},60000)}
 function stop(){clearInterval(timer);timer=null}
+const warm=()=>{if(!seen){seen=true;load(true)}};
+if(document.readyState==='complete')setTimeout(warm,200);else addEventListener('load',()=>setTimeout(warm,200),{once:true});
 if('IntersectionObserver' in window){
   new IntersectionObserver(es=>{vis=es[0].isIntersecting;
     if(vis){if(!seen){seen=true;load(true)}else load(false);start();connect()}else{stop();disconnect()}},{rootMargin:'400px 0px'}).observe(root);
