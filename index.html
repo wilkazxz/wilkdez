@@ -8,7 +8,17 @@
 <title>WilkDez | Developer Studio</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+<link rel="dns-prefetch" href="https://firestore.googleapis.com">
+<link rel="dns-prefetch" href="https://api.coingecko.com">
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js">
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js">
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js">
+<!-- Font tidak lagi memblokir tampilan: teks langsung muncul, font menyusul -->
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet"></noscript>
+<!-- Pakai hero hasil kunjungan sebelumnya (instan), sebelum Firebase selesai -->
+<script>try{var h=localStorage.getItem('wd_hero');if(h)document.documentElement.style.setProperty('--img-hero','url("'+h+'")')}catch(e){}</script>
 <style>
 /* ====== GANTI FILE GAMBAR DI SINI ====== */
 :root{
@@ -104,8 +114,8 @@ h1 span{display:block;background:linear-gradient(180deg,#fff 0,#8d8d8d 100%);-we
 @keyframes wheel{0%{opacity:0;transform:translateY(0)}30%{opacity:1}100%{opacity:0;transform:translateY(12px)}}
 .slogan{display:flex;align-items:center;gap:20px;letter-spacing:.3em;font-size:.85rem;color:rgba(255,255,255,.8)}
 .slogan::before{content:"";width:clamp(40px,12vw,190px);height:1px;background:var(--line)}
-.rise>*{animation:rise .8s cubic-bezier(.2,.7,.2,1) both}
-.rise>*:nth-child(2){animation-delay:.08s}.rise>*:nth-child(3){animation-delay:.16s}.rise>*:nth-child(4){animation-delay:.24s}.rise>*:nth-child(5){animation-delay:.32s}
+.rise>*{animation:rise .5s cubic-bezier(.2,.7,.2,1) both}
+.rise>*:nth-child(2){animation-delay:.04s}.rise>*:nth-child(3){animation-delay:.08s}.rise>*:nth-child(4){animation-delay:.12s}.rise>*:nth-child(5){animation-delay:.16s}
 @keyframes rise{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
 
 /* ===== TABLET ===== */
@@ -149,6 +159,46 @@ h1 span{display:block;background:linear-gradient(180deg,#fff 0,#8d8d8d 100%);-we
   .hero{min-height:620px}
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* ===== BITCOIN CHART ===== */
+.btc{padding:80px var(--pad) 0;max-width:1200px;margin:0 auto}
+.btc-head{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap}
+.btc-tag{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:.95rem;margin-bottom:6px}
+.live{width:8px;height:8px;border-radius:50%;background:#2ee59d;animation:pulse 2s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(46,229,157,.55)}70%,100%{box-shadow:0 0 0 9px rgba(46,229,157,0)}}
+.btc h2{font-size:clamp(1.6rem,4vw,2.4rem);font-weight:500}
+.btc h2 span{color:var(--muted);font-weight:300;font-size:.6em;margin-left:6px}
+.btc-ctl{display:flex;gap:10px;flex-wrap:wrap}
+.seg{display:inline-flex;padding:4px;border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.05)}
+.seg button{min-width:48px;height:36px;padding:0 14px;border-radius:999px;font-size:.85rem;color:var(--muted);transition:background .2s,color .2s}
+.seg button:hover{color:#fff}
+.seg button[aria-pressed=true]{background:#fff;color:#000;font-weight:500}
+.btc-card{margin-top:22px;border:1px solid var(--line);border-radius:24px;background:rgba(255,255,255,.04);padding:clamp(16px,3vw,28px)}
+.btc-price{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px 14px}
+.btc-price b{font-size:clamp(1.8rem,5vw,3rem);font-weight:600;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.chip{padding:4px 12px;border-radius:999px;font-size:.9rem;font-weight:500;background:rgba(255,255,255,.1);min-height:28px}
+.chip.up{color:#2ee59d;background:rgba(46,229,157,.12)}
+.chip.dn{color:#ff5c6c;background:rgba(255,92,108,.12)}
+.btc-chart{position:relative;margin-top:16px;min-height:240px;touch-action:pan-y;cursor:crosshair}
+.btc-chart svg{width:100%;display:block;overflow:visible;transition:opacity .3s}
+.btc-chart text{fill:rgba(255,255,255,.5);font:11px 'Poppins',system-ui,sans-serif}
+.btc-chart.load svg{opacity:.3}
+.btc-chart.load::after{content:"";position:absolute;inset:0;border-radius:16px;
+  background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.08) 50%,transparent 70%);background-size:200% 100%;animation:shim 1.3s linear infinite}
+@keyframes shim{from{background-position:200% 0}to{background-position:-200% 0}}
+.tip{position:absolute;top:0;left:0;pointer-events:none;padding:8px 12px;border-radius:12px;border:1px solid var(--line);
+  background:rgba(10,10,10,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);font-size:.85rem;white-space:nowrap;opacity:0;transition:opacity .15s}
+.tip b{display:block;font-weight:600;font-variant-numeric:tabular-nums}
+.tip small{color:var(--muted);font-size:.78rem}
+.btc-err{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--muted);text-align:center;padding:16px}
+.btc-chart.err .btc-err{display:flex}
+.btc-err button{padding:10px 20px;border-radius:999px;border:1px solid var(--line);color:#fff;font-size:.9rem}
+.btc-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:20px}
+.bs{padding:14px 16px;border:1px solid var(--line);border-radius:16px;min-width:0}
+.bs small{display:block;color:var(--muted);font-size:.8rem;margin-bottom:2px}
+.bs b{display:block;font-weight:500;font-size:1rem;font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.btc-src{margin-top:14px;color:var(--muted);font-size:.8rem}
+@media (max-width:700px){.btc-stats{grid-template-columns:repeat(2,1fr)}.btc-ctl{width:100%}.btc-ctl .seg{flex:1;justify-content:space-between}.btc-ctl .seg button{flex:1;padding:0 8px}}
 </style>
 </head>
 <body>
@@ -169,6 +219,7 @@ h1 span{display:block;background:linear-gradient(180deg,#fff 0,#8d8d8d 100%);-we
           <a href="#projects">Semua Project</a><a href="#featured">Featured</a><a href="#latest">Terbaru</a>
         </div>
       </div>
+      <a href="#bitcoin">Market</a>
       <a href="#gallery">Gallery</a>
       <a href="#about">About</a>
       <a href="#services">Services</a>
@@ -223,6 +274,41 @@ h1 span{display:block;background:linear-gradient(180deg,#fff 0,#8d8d8d 100%);-we
   </div>
 </header>
 
+<section id="bitcoin" class="btc" aria-label="Chart harga Bitcoin">
+  <div class="btc-head">
+    <div>
+      <p class="btc-tag"><i class="live"></i>Live Market</p>
+      <h2>Bitcoin <span>BTC</span></h2>
+    </div>
+    <div class="btc-ctl">
+      <div class="seg" id="btcCur" role="group" aria-label="Mata uang">
+        <button type="button" data-v="usd" aria-pressed="true">USD</button>
+        <button type="button" data-v="idr" aria-pressed="false">IDR</button>
+      </div>
+      <div class="seg" id="btcRange" role="group" aria-label="Rentang waktu">
+        <button type="button" data-v="1" aria-pressed="true">24J</button>
+        <button type="button" data-v="7" aria-pressed="false">7H</button>
+        <button type="button" data-v="30" aria-pressed="false">30H</button>
+        <button type="button" data-v="365" aria-pressed="false">1T</button>
+      </div>
+    </div>
+  </div>
+  <div class="btc-card">
+    <div class="btc-price"><b id="btcP">—</b><span class="chip" id="btcCh">—</span></div>
+    <div class="btc-chart load" id="btcChart">
+      <div class="tip" id="btcTip"></div>
+      <div class="btc-err"><span>Data harga belum bisa dimuat.</span><button type="button" id="btcRetry">Coba lagi</button></div>
+    </div>
+    <div class="btc-stats">
+      <div class="bs"><small>Tertinggi 24J</small><b id="bsHi">—</b></div>
+      <div class="bs"><small>Terendah 24J</small><b id="bsLo">—</b></div>
+      <div class="bs"><small>Market Cap</small><b id="bsMc">—</b></div>
+      <div class="bs"><small>Volume 24J</small><b id="bsVol">—</b></div>
+    </div>
+    <p class="btc-src" id="btcSrc">Memuat data…</p>
+  </div>
+</section>
+
 <section id="projects" class="pj">
   <h2>Projects</h2>
   <div class="pgrid" id="pgrid"><p class="pe">Belum ada project.</p></div>
@@ -266,18 +352,32 @@ const $ = id => document.getElementById(id);
 const spot=$('spot'), dots=$('dots');
 let cur=0, timer;
 
-function show(i){
+function paintSlide(){
+  const s=SLIDES[cur];
+  $('spotLabel').textContent=s.label;
+  $('spotTitle').textContent=s.title;
+  $('spotGo').href=s.url;
+  $('spotImg').style.background=s.img?`url("${s.img}") center/cover`:'';
+  [...dots.children].forEach((d,k)=>d.setAttribute('aria-current',k===cur));
+  spot.classList.remove('fade');
+}
+function show(i,now){
   cur=(i+SLIDES.length)%SLIDES.length;
+  if(now){paintSlide();return}
   spot.classList.add('fade');
-  setTimeout(()=>{
-    const s=SLIDES[cur];
-    $('spotLabel').textContent=s.label;
-    $('spotTitle').textContent=s.title;
-    $('spotGo').href=s.url;
-    $('spotImg').style.background=s.img?`url("${s.img}") center/cover`:'';
-    [...dots.children].forEach((d,k)=>d.setAttribute('aria-current',k===cur));
-    spot.classList.remove('fade');
-  },280);
+  setTimeout(paintSlide,280);
+}
+/* helper dipakai juga oleh script Firebase di bawah */
+function setLogo(d){
+  const im=document.querySelector('.brand img');im.src=d;im.style.display='block';im.nextElementSibling.style.display='none';
+  let ic=document.querySelector('link[rel=icon]');if(!ic){ic=document.createElement('link');ic.rel='icon';document.head.appendChild(ic)}ic.href=d;
+}
+function setHero(d){document.documentElement.style.setProperty('--img-hero','url("'+d+'")')}
+function applyContent(c){
+  if(c.brand){$('brandName').textContent=c.brand;document.title=c.brand+' | Developer Studio'}
+  if(c.h1a)$('h1a').textContent=c.h1a; if(c.h1b)$('h1b').textContent=c.h1b; if(c.lead)$('lead').textContent=c.lead;
+  document.querySelectorAll('.stat').forEach((e,i)=>{const s=c.stats&&c.stats[i];if(s){e.querySelector('b').textContent=s.v??s[0];e.querySelector('small').textContent=s.l??s[1]}});
+  if(c.slides&&c.slides.length===SLIDES.length)c.slides.forEach((s,i)=>SLIDES[i]={label:s.l??s[0],title:s.t??s[1],url:s.u??s[2],img:SLIDES[i].img});
 }
 SLIDES.forEach((_,i)=>{
   const b=document.createElement('button');
@@ -289,6 +389,14 @@ SLIDES.forEach((_,i)=>{
 function restart(){clearInterval(timer);timer=setInterval(()=>show(cur+1),5000)}
 restart();
 document.addEventListener('visibilitychange',()=>document.hidden?clearInterval(timer):restart());
+
+/* ===== CACHE: tampilkan data kunjungan terakhir langsung (tanpa nunggu Firebase) ===== */
+try{
+  const c=JSON.parse(localStorage.getItem('wd_c')||'null');if(c)applyContent(c);
+  const lg=localStorage.getItem('wd_logo');if(lg)setLogo(lg);
+  SLIDES.forEach((x,i)=>{x.img=localStorage.getItem('wd_s'+i)||''});
+  paintSlide();
+}catch(e){}
 
 /* ===== MENU MOBILE + DROPDOWN ===== */
 const burger=$('burger'), menu=$('menu');
@@ -319,9 +427,8 @@ document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&['+','-','=',
 import {firebaseConfig,configured} from './firebase-config.js';
 if(configured){
 const A='https://www.gstatic.com/firebasejs/10.12.2/',$=id=>document.getElementById(id);
-const {initializeApp}=await import(A+'firebase-app.js');
-const {getAuth,onAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,signOut}=await import(A+'firebase-auth.js');
-const {getFirestore,doc,getDoc,setDoc,onSnapshot,collection,query,orderBy,increment}=await import(A+'firebase-firestore.js');
+const [{initializeApp},{getAuth,onAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,signOut},{getFirestore,doc,getDoc,setDoc,onSnapshot,collection,query,orderBy,increment}]=
+  await Promise.all([import(A+'firebase-app.js'),import(A+'firebase-auth.js'),import(A+'firebase-firestore.js')]);
 const app=initializeApp(firebaseConfig),db=getFirestore(app),auth=getAuth(app);
 let user=null,projects=[],protOn=false;
 
@@ -384,18 +491,152 @@ function render(){const g=$('pgrid');
 
 /* ===== data realtime: berubah di admin, langsung berubah di sini ===== */
 const on=(k,f)=>onSnapshot(doc(db,'site',k),s=>s.exists()&&f(s.data()),()=>{});
+const gv=k=>{try{return localStorage.getItem(k)}catch(e){return null}},sv=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
+/* urutan: yang kecil dulu (teks), gambar besar belakangan */
 on('settings',s=>{protOn=!!s.protect;wm()});
-on('logo',l=>{if(!l.data)return;const im=document.querySelector('.brand img');im.src=l.data;im.style.display='block';im.nextElementSibling.style.display='none';
-  let ic=document.querySelector('link[rel=icon]');if(!ic){ic=document.createElement('link');ic.rel='icon';document.head.appendChild(ic)}ic.href=l.data});
-on('hero',h=>{if(h.data)document.documentElement.style.setProperty('--img-hero','url("'+h.data+'")')});
-on('content',c=>{
-  if(c.brand){$('brandName').textContent=c.brand;document.title=c.brand+' | Developer Studio'}
-  if(c.h1a)$('h1a').textContent=c.h1a; if(c.h1b)$('h1b').textContent=c.h1b; if(c.lead)$('lead').textContent=c.lead;
-  document.querySelectorAll('.stat').forEach((e,i)=>{const s=c.stats&&c.stats[i];if(s){e.querySelector('b').textContent=s.v??s[0];e.querySelector('small').textContent=s.l??s[1]}});
-  if(c.slides&&c.slides.length===SLIDES.length){c.slides.forEach((s,i)=>SLIDES[i]={label:s.l??s[0],title:s.t??s[1],url:s.u??s[2],img:SLIDES[i].img});show(cur)}});
-[0,1,2,3].forEach(i=>on('slide'+i,s=>{SLIDES[i].img=s.data||'';show(cur)}));
+on('content',c=>{sv('wd_c',JSON.stringify(c));applyContent(c);show(cur,1)});
+on('logo',l=>{if(l.data&&l.data!==gv('wd_logo')){setLogo(l.data);sv('wd_logo',l.data)}});
+on('hero',h=>{if(h.data&&h.data!==gv('wd_hero')){setHero(h.data);sv('wd_hero',h.data)}});
+[0,1,2,3].forEach(i=>on('slide'+i,s=>{const d=s.data||'';if(d!==(gv('wd_s'+i)||'')||SLIDES[i].img!==d){SLIDES[i].img=d;sv('wd_s'+i,d);show(cur,1)}}));
 onSnapshot(query(collection(db,'projects'),orderBy('created','desc')),s=>{projects=s.docs.map(d=>({id:d.id,...d.data()}));render()},()=>{});
 }
+</script>
+<script>
+/* ===== BITCOIN CHART (tanpa library, lazy-load saat section mendekati layar) ===== */
+(()=>{
+const $=id=>document.getElementById(id), root=$('bitcoin'), box=$('btcChart'), tip=$('btcTip');
+if(!root)return;
+let cur='usd', days=1, data=[], info=null, rid=0, timer=null, seen=false;
+const CG='https://api.coingecko.com/api/v3/';
+const BN=['https://data-api.binance.vision/api/v3/','https://api.binance.com/api/v3/'];
+const KL={1:['5m',288],7:['1h',168],30:['4h',180],365:['1d',365]};
+const LBL={1:'24J',7:'7H',30:'30H',365:'1T'};
+const memo=new Map();
+
+const getJ=async(u,ms=8000)=>{const c=new AbortController(),t=setTimeout(()=>c.abort(),ms);
+  try{const r=await fetch(u,{signal:c.signal});if(!r.ok)throw new Error(r.status);return await r.json()}finally{clearTimeout(t)}};
+const sym=c=>c==='idr'?'BTCIDR':'BTCUSDT';
+
+async function series(c,d){
+  try{const j=await getJ(`${CG}coins/bitcoin/market_chart?vs_currency=${c}&days=${d}`);
+    if(j.prices&&j.prices.length>2)return{pts:j.prices,src:'CoinGecko'}}catch(e){}
+  const [iv,lim]=KL[d];
+  for(const b of BN){try{const j=await getJ(`${b}klines?symbol=${sym(c)}&interval=${iv}&limit=${lim}`);
+    return{pts:j.map(k=>[k[0],+k[4]]),src:'Binance'}}catch(e){}}
+  throw new Error('series');
+}
+async function ticker(c){
+  try{const j=(await getJ(`${CG}coins/markets?vs_currency=${c}&ids=bitcoin`))[0];
+    return{p:j.current_price,hi:j.high_24h,lo:j.low_24h,mc:j.market_cap,vol:j.total_volume}}catch(e){}
+  for(const b of BN){try{const j=await getJ(`${b}ticker/24hr?symbol=${sym(c)}`);
+    return{p:+j.lastPrice,hi:+j.highPrice,lo:+j.lowPrice,mc:null,vol:+j.quoteVolume}}catch(e){}}
+  return null;
+}
+
+/* ---- format ---- */
+const loc=()=>cur==='idr'?'id-ID':'en-US';
+const money=v=>new Intl.NumberFormat(loc(),{style:'currency',currency:cur.toUpperCase(),maximumFractionDigits:cur==='idr'?0:2,minimumFractionDigits:cur==='idr'?0:2}).format(v);
+const compact=(v,f=1)=>{try{return new Intl.NumberFormat(loc(),{style:'currency',currency:cur.toUpperCase(),notation:'compact',maximumFractionDigits:f}).format(v)}catch(e){return money(v)}};
+const fmtX=t=>{const d=new Date(t);
+  return days===1?d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})
+    :days===365?d.toLocaleDateString('id-ID',{month:'short',year:'2-digit'})
+    :d.toLocaleDateString('id-ID',{day:'numeric',month:'short'})};
+const fmtFull=t=>new Date(t).toLocaleString('id-ID',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+
+/* ---- gambar chart ---- */
+function draw(){
+  if(data.length<2)return;
+  const W=box.clientWidth||600,H=W<520?240:340,T=12,B=26;
+  const xs=data.map(d=>d[0]),ys=data.map(d=>d[1]),x0=xs[0],x1=xs[xs.length-1];
+  let mn=Math.min(...ys),mx=Math.max(...ys);const pad=(mx-mn)*.08||mx*.01;mn-=pad;mx+=pad;
+  const X=t=>(t-x0)/(x1-x0)*W, Y=v=>T+(1-(v-mn)/(mx-mn))*(H-T-B);
+  const up=ys[ys.length-1]>=ys[0],col=up?'#2ee59d':'#ff5c6c';
+  const ln=data.map((d,i)=>(i?'L':'M')+X(d[0]).toFixed(1)+' '+Y(d[1]).toFixed(1)).join('');
+  let g='';
+  for(let k=0;k<=3;k++){const v=mn+(mx-mn)*k/3,y=Y(v).toFixed(1);
+    g+=`<line x1="0" x2="${W}" y1="${y}" y2="${y}" stroke="rgba(255,255,255,.08)"/><text x="0" y="${y-5}">${compact(v)}</text>`}
+  let xl='';
+  for(let k=0;k<4;k++){const i=Math.round(k*(data.length-1)/3),a=k===0?'start':k===3?'end':'middle';
+    xl+=`<text x="${X(xs[i]).toFixed(1)}" y="${H-6}" text-anchor="${a}">${fmtX(xs[i])}</text>`}
+  box.dataset.h=H;
+  const old=box.querySelector('svg');if(old)old.remove();
+  box.insertAdjacentHTML('afterbegin',`<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="Grafik harga Bitcoin ${LBL[days]}">
+    <defs><linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${col}" stop-opacity=".32"/><stop offset="1" stop-color="${col}" stop-opacity="0"/></linearGradient></defs>
+    ${g}${xl}
+    <path d="${ln}L${W} ${H-B}L0 ${H-B}Z" fill="url(#bg)"/>
+    <path d="${ln}" fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    <line id="bx" y1="${T}" y2="${H-B}" stroke="rgba(255,255,255,.35)" stroke-dasharray="3 4" style="display:none"/>
+    <circle id="bd" r="5" fill="${col}" stroke="#000" stroke-width="2" style="display:none"/></svg>`);
+  box._m={W,H,X,Y,xs,T,B};
+}
+
+/* ---- hover / sentuh ---- */
+function hover(e){
+  const m=box._m;if(!m||!data.length)return;
+  const r=box.getBoundingClientRect(),px=Math.max(0,Math.min(m.W,(e.clientX-r.left)*(m.W/r.width)));
+  const t=m.xs[0]+px/m.W*(m.xs[m.xs.length-1]-m.xs[0]);
+  let lo=0,hi=m.xs.length-1;while(hi-lo>1){const mid=(lo+hi)>>1;m.xs[mid]<t?lo=mid:hi=mid}
+  const i=(t-m.xs[lo]<m.xs[hi]-t)?lo:hi,d=data[i],x=m.X(d[0]),y=m.Y(d[1]);
+  const bx=$('bx'),bd=$('bd');if(!bx)return;
+  bx.setAttribute('x1',x);bx.setAttribute('x2',x);bx.style.display='';
+  bd.setAttribute('cx',x);bd.setAttribute('cy',y);bd.style.display='';
+  tip.innerHTML=`<b>${money(d[1])}</b><small>${fmtFull(d[0])}</small>`;
+  const tw=tip.offsetWidth,sx=x*(r.width/m.W);
+  tip.style.transform=`translateX(${Math.max(0,Math.min(r.width-tw,sx-tw/2))}px)`;tip.style.opacity=1;
+}
+function leave(){tip.style.opacity=0;const bx=$('bx'),bd=$('bd');if(bx)bx.style.display='none';if(bd)bd.style.display='none'}
+box.addEventListener('pointermove',hover);box.addEventListener('pointerdown',hover);
+box.addEventListener('pointerleave',leave);box.addEventListener('pointercancel',leave);
+
+/* ---- isi angka ---- */
+function paint(){
+  const last=data[data.length-1][1],first=data[0][1],pct=(last-first)/first*100,up=pct>=0;
+  $('btcP').textContent=money(info&&info.p?info.p:last);
+  const ch=$('btcCh');ch.className='chip '+(up?'up':'dn');
+  ch.textContent=(up?'▲ ':'▼ ')+Math.abs(pct).toFixed(2)+'% · '+LBL[days];
+  const v=x=>x==null||isNaN(x)?'—':compact(x,2);
+  $('bsHi').textContent=info?v(info.hi):'—';$('bsLo').textContent=info?v(info.lo):'—';
+  $('bsMc').textContent=info?v(info.mc):'—';$('bsVol').textContent=info?v(info.vol):'—';
+  draw();
+}
+
+/* ---- ambil data ---- */
+async function load(loud){
+  const id=++rid,key=cur+days,hit=memo.get(key);
+  if(hit&&Date.now()-hit.t<60000){data=hit.s.pts;info=hit.k;box.classList.remove('load','err');paint();$('btcSrc').textContent=hit.src;return}
+  if(loud){box.classList.add('load');box.classList.remove('err')}
+  try{
+    const [s,k]=await Promise.all([series(cur,days),ticker(cur)]);
+    if(id!==rid)return;
+    const step=Math.ceil(s.pts.length/400);
+    data=step>1?s.pts.filter((_,i)=>i%step===0||i===s.pts.length-1):s.pts;info=k;
+    const now=new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    const src=`Sumber: ${s.src} · diperbarui ${now}`;
+    memo.set(key,{t:Date.now(),s:{pts:data},k,src});
+    box.classList.remove('load','err');paint();$('btcSrc').textContent=src;
+  }catch(e){
+    if(id!==rid)return;
+    if(!data.length||loud){box.classList.remove('load');box.classList.add('err');$('btcSrc').textContent='Gagal memuat data.'}
+  }
+}
+
+/* ---- kontrol ---- */
+function seg(el,fn){el.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  el.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));fn(b.dataset.v);load(true)})}
+seg($('btcCur'),v=>{cur=v;data=[];info=null});
+seg($('btcRange'),v=>{days=+v});
+$('btcRetry').onclick=()=>load(true);
+if('ResizeObserver' in window){let w=0;new ResizeObserver(()=>{const n=box.clientWidth;if(n!==w){w=n;if(data.length)draw()}}).observe(box)}
+else addEventListener('resize',()=>data.length&&draw());
+
+/* ---- mulai hanya saat section mendekati layar; refresh tiap 60 dtk saat terlihat ---- */
+function start(){if(timer)return;timer=setInterval(()=>{if(!document.hidden)load(false)},60000)}
+function stop(){clearInterval(timer);timer=null}
+if('IntersectionObserver' in window){
+  new IntersectionObserver(es=>{const on=es[0].isIntersecting;
+    if(on){if(!seen){seen=true;load(true)}else load(false);start()}else stop()},{rootMargin:'400px 0px'}).observe(root);
+}else{load(true);start()}
+})();
 </script>
 </body>
 </html>
