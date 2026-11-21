@@ -160,6 +160,51 @@ h1 span{display:block;background:linear-gradient(180deg,#fff 0,#8d8d8d 100%);-we
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 
+/* ===== CRYPTO SCREENER ===== */
+.menu .mb{position:relative;padding:8px 0;color:rgba(255,255,255,.85);white-space:nowrap}
+.menu .mb:hover{color:#fff}
+.scr{position:fixed;inset:0;z-index:210;background:#000;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.scr[hidden]{display:none}
+.scr-in{max-width:1200px;margin:0 auto;padding:calc(24px + env(safe-area-inset-top)) var(--pad) calc(60px + env(safe-area-inset-bottom))}
+.scr-top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:18px}
+.scr h2{font-size:clamp(1.5rem,4vw,2.3rem);font-weight:500}
+.scr-x{width:46px;height:46px;border:1px solid var(--line);border-radius:50%;font-size:1.6rem;line-height:1;flex-shrink:0}
+.scr-x:hover{background:rgba(255,255,255,.12)}
+.scr-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.scr-meta{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:16px 0 18px;color:var(--muted);font-size:.88rem}
+.scr-meta button{padding:6px 14px;border-radius:999px;border:1px solid var(--line);color:#fff;font-size:.82rem}
+.scr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:16px}
+.sc{border:1px solid var(--line);border-radius:22px;background:rgba(255,255,255,.04);padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.sc-h{display:flex;align-items:center;gap:12px}
+.av{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-weight:600;font-size:.95rem;background:linear-gradient(135deg,#555,#111);border:1px solid var(--line);flex-shrink:0}
+.sc-n{flex:1;min-width:0}
+.sc-n b{display:block;font-weight:600;font-size:1.05rem}
+.sc-n small{color:var(--muted);font-size:.8rem}
+.dir{padding:5px 12px;border-radius:999px;font-weight:600;font-size:.8rem;letter-spacing:.04em}
+.dir.LONG{color:#2ee59d;background:rgba(46,229,157,.14)}
+.dir.SHORT{color:#ff5c6c;background:rgba(255,92,108,.14)}
+.sc svg{width:100%;height:110px;display:block;border-radius:12px;background:rgba(255,255,255,.03)}
+.lv{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.lv div{padding:9px 12px;border:1px solid var(--line);border-radius:12px;min-width:0}
+.lv small{display:block;color:var(--muted);font-size:.74rem}
+.lv b{display:block;font-weight:500;font-size:.95rem;font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis}
+.lv i{font-style:normal;font-size:.74rem;color:var(--muted)}
+.lv .e b{color:#fff}.lv .t b{color:#2ee59d}.lv .s b{color:#ff5c6c}
+.sc-l{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:.88rem}
+.sc-l .lp{font-variant-numeric:tabular-nums;font-weight:500}
+.sc-l .lr{color:var(--muted);font-variant-numeric:tabular-nums}
+.st{padding:4px 10px;border-radius:999px;font-size:.78rem;font-weight:500;background:rgba(255,255,255,.1)}
+.st.up{color:#2ee59d;background:rgba(46,229,157,.12)}
+.st.dn{color:#ff5c6c;background:rgba(255,92,108,.12)}
+.st.ok{color:#ffd166;background:rgba(255,209,102,.12)}
+.tags{display:flex;flex-wrap:wrap;gap:6px}
+.tags span{padding:3px 9px;border-radius:999px;border:1px solid var(--line);color:var(--muted);font-size:.74rem}
+.tags .sk{color:#fff}
+.scr-note{margin-top:22px;color:var(--muted);font-size:.8rem;line-height:1.6;max-width:70ch}
+.scr-empty{grid-column:1/-1;padding:40px 16px;text-align:center;color:var(--muted)}
+.scr-empty button{margin-top:12px;padding:10px 20px;border-radius:999px;border:1px solid var(--line);color:#fff}
+@media (max-width:700px){.btc-ctl .btn{flex:1 1 100%}}
+
 /* ===== BITCOIN CHART ===== */
 .btc{padding:80px var(--pad) 0;max-width:1200px;margin:0 auto}
 .btc-head{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap}
@@ -221,6 +266,7 @@ h1 span{display:block;background:linear-gradient(180deg,#fff 0,#8d8d8d 100%);-we
         </div>
       </div>
       <a href="#bitcoin">Market</a>
+      <button type="button" class="mb" data-scr>Screener</button>
       <a href="#gallery">Gallery</a>
       <a href="#about">About</a>
       <a href="#services">Services</a>
@@ -242,6 +288,8 @@ h1 span{display:block;background:linear-gradient(180deg,#fff 0,#8d8d8d 100%);-we
       <div class="cta">
         <a class="btn btn-solid" href="#projects">Explore Projects
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 8h12M9 3l5 5-5 5"/></svg></a>
+        <button class="btn btn-ghost" type="button" data-scr>Crypto Screener
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l5-6 4 3 8-9M14 5h6v6"/></svg></button>
         <a class="btn btn-ghost" href="#about">Learn More
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 2l7 5-7 5z"/></svg></a>
       </div>
@@ -282,6 +330,7 @@ h1 span{display:block;background:linear-gradient(180deg,#fff 0,#8d8d8d 100%);-we
       <h2>Bitcoin <span>BTC</span></h2>
     </div>
     <div class="btc-ctl">
+      <button class="btn btn-solid btn-sm" type="button" data-scr>Screener · Entry TP SL</button>
       <div class="seg" id="btcCur" role="group" aria-label="Mata uang">
         <button type="button" data-v="usd" aria-pressed="true">USD</button>
         <button type="button" data-v="idr" aria-pressed="false">IDR</button>
@@ -502,6 +551,33 @@ on('hero',h=>{if(h.data&&h.data!==gv('wd_hero')){setHero(h.data);sv('wd_hero',h.
 onSnapshot(query(collection(db,'projects'),orderBy('created','desc')),s=>{projects=s.docs.map(d=>({id:d.id,...d.data()}));render()},()=>{});
 }
 </script>
+<div id="scr" class="scr" hidden role="dialog" aria-modal="true" aria-label="Crypto Screener">
+  <div class="scr-in">
+    <div class="scr-top">
+      <div>
+        <p class="btc-tag"><i class="live"></i>Crypto Screener</p>
+        <h2>Setup Entry · TP · SL</h2>
+      </div>
+      <button class="scr-x" id="scrX" type="button" aria-label="Tutup">×</button>
+    </div>
+    <div class="scr-bar">
+      <div class="seg" id="scrTf" role="group" aria-label="Timeframe">
+        <button type="button" data-v="5m" aria-pressed="false">5m</button>
+        <button type="button" data-v="15m" aria-pressed="true">15m</button>
+        <button type="button" data-v="1h" aria-pressed="false">1j</button>
+        <button type="button" data-v="4h" aria-pressed="false">4j</button>
+      </div>
+      <div class="seg" id="scrFl" role="group" aria-label="Arah">
+        <button type="button" data-v="all" aria-pressed="true">Semua</button>
+        <button type="button" data-v="LONG" aria-pressed="false">Long</button>
+        <button type="button" data-v="SHORT" aria-pressed="false">Short</button>
+      </div>
+    </div>
+    <div class="scr-meta"><span id="scrMeta">Menganalisis…</span><button type="button" id="scrRef">Refresh</button></div>
+    <div class="scr-grid" id="scrGrid"></div>
+    <p class="scr-note">Hasil screener dibuat otomatis dari indikator teknikal (EMA 20/50, RSI 14, ATR 14, volume, breakout/pullback) pada candle yang sudah close. Level Entry, TP, dan SL hanya acuan hitungan, bukan saran investasi atau rekomendasi beli/jual, dan tidak ada jaminan profit. Tentukan sendiri ukuran posisi dan risikomu (DYOR).</p>
+  </div>
+</div>
 <script>
 /* ===== BITCOIN CHART (tanpa library, lazy-load saat section mendekati layar) ===== */
 (()=>{
@@ -707,6 +783,162 @@ if('IntersectionObserver' in window){
   new IntersectionObserver(es=>{vis=es[0].isIntersecting;
     if(vis){if(!seen){seen=true;load(true)}else load(false);start();connect()}else{stop();disconnect()}},{rootMargin:'400px 0px'}).observe(root);
 }else{vis=seen=true;load(true);start();connect()}
+})();
+</script>
+<script>
+/* ===== CRYPTO SCREENER: Entry / TP / SL dari indikator teknikal, harga live ===== */
+(()=>{
+const $=id=>document.getElementById(id), ov=$('scr'), grid=$('scrGrid');
+if(!ov)return;
+const COINS=['BTC','ETH','BNB','SOL','XRP','DOGE','ADA','AVAX','LINK','TON','DOT','TRX','LTC','NEAR','SUI','APT','ARB','OP','INJ','PEPE','AAVE','UNI','ATOM','FIL'];
+const BN=['https://data-api.binance.vision/api/v3/','https://api.binance.com/api/v3/'];
+const WSH=['wss://stream.binance.com:9443/stream?streams=','wss://data-stream.binance.vision/stream?streams='];
+let tf='15m',flt='all',res=[],okN=0,isOpen=false,tk=0,timer=null,ws=null,wsOn=false,wsHost=0,wsDelay=1000,hostI=0,raf=0,at='';
+const px={},dirty=new Set();
+
+const getJ=async(u,ms=9000)=>{const c=new AbortController(),t=setTimeout(()=>c.abort(),ms);
+  try{const r=await fetch(u,{signal:c.signal});if(!r.ok)throw new Error(r.status);return await r.json()}finally{clearTimeout(t)}};
+async function kl(s,t){
+  for(let k=0;k<BN.length;k++){const i=(hostI+k)%BN.length;
+    try{const j=await getJ(`${BN[i]}klines?symbol=${s}USDT&interval=${t}&limit=120`);hostI=i;
+      return j.map(x=>({t:x[0],o:+x[1],h:+x[2],l:+x[3],c:+x[4],v:+x[5]}))}catch(e){}}
+  return null;
+}
+
+/* ---- indikator ---- */
+const ema=(a,n)=>{const k=2/(n+1);let e=a[0];const o=[e];for(let i=1;i<a.length;i++){e=a[i]*k+e*(1-k);o.push(e)}return o};
+function rsi(c,n=14){let g=0,l=0;for(let i=1;i<=n;i++){const d=c[i]-c[i-1];d>=0?g+=d:l-=d}g/=n;l/=n;
+  for(let i=n+1;i<c.length;i++){const d=c[i]-c[i-1];g=(g*(n-1)+Math.max(d,0))/n;l=(l*(n-1)+Math.max(-d,0))/n}
+  return l===0?100:100-100/(1+g/l)}
+function atr(cs,n=14){const tr=cs.map((x,i)=>i?Math.max(x.h-x.l,Math.abs(x.h-cs[i-1].c),Math.abs(x.l-cs[i-1].c)):x.h-x.l);
+  let a=tr.slice(1,n+1).reduce((p,q)=>p+q,0)/n;for(let i=n+1;i<tr.length;i++)a=(a*(n-1)+tr[i])/n;return a}
+
+/* ---- analisa satu koin (candle terakhir yang sudah close) ---- */
+function analyze(s,all){
+  const cs=all.slice(0,-1);if(cs.length<60)return null;
+  const c=cs.map(x=>x.c),n=c.length-1,e20=ema(c,20),e50=ema(c,50),r=rsi(c),a=atr(cs),entry=c[n];
+  if(!(a>0))return null;
+  const prev=cs.slice(-21,-1),avgV=prev.reduce((p,x)=>p+x.v,0)/20,vr=avgV?cs[n].v/avgV:1;
+  const hh=Math.max(...prev.map(x=>x.h)),ll=Math.min(...prev.map(x=>x.l));
+  const L={s:0,t:[]},S={s:0,t:[]},vt='Vol '+vr.toFixed(1)+'x',rt='RSI '+r.toFixed(0);
+  /* LONG */
+  if(entry>e20[n]&&e20[n]>e50[n]){L.s+=2;L.t.push('Tren naik EMA')}else if(entry>e50[n]){L.s+=1;L.t.push('Di atas EMA50')}
+  if(e20[n]>e20[n-3])L.s+=1;
+  if(r>=50&&r<=68){L.s+=2;L.t.push(rt)}else if(r>=42&&r<50){L.s+=.5;L.t.push(rt)}else if(r>75)L.s-=1;
+  if(entry>hh){L.s+=2;L.t.push('Breakout 20')}else if(entry>e20[n]&&Math.abs(cs[n].l-e20[n])<=.6*a){L.s+=1.5;L.t.push('Pullback EMA20')}
+  if(vr>=1.5){L.s+=1.5;L.t.push(vt)}else if(vr>=1.2){L.s+=.75;L.t.push(vt)}
+  /* SHORT */
+  if(entry<e20[n]&&e20[n]<e50[n]){S.s+=2;S.t.push('Tren turun EMA')}else if(entry<e50[n]){S.s+=1;S.t.push('Di bawah EMA50')}
+  if(e20[n]<e20[n-3])S.s+=1;
+  if(r>=32&&r<=50){S.s+=2;S.t.push(rt)}else if(r>50&&r<=58){S.s+=.5;S.t.push(rt)}else if(r<25)S.s-=1;
+  if(entry<ll){S.s+=2;S.t.push('Breakdown 20')}else if(entry<e20[n]&&Math.abs(cs[n].h-e20[n])<=.6*a){S.s+=1.5;S.t.push('Pullback EMA20')}
+  if(vr>=1.5){S.s+=1.5;S.t.push(vt)}else if(vr>=1.2){S.s+=.75;S.t.push(vt)}
+  const long=L.s>=S.s,b=long?L:S;
+  if(b.s<4.5)return null;
+  /* level: SL di bawah/atas swing 8 candle atau min 1 ATR (maks 3 ATR); TP = 1.5R dan 2.5R */
+  const rec=cs.slice(-8);let sl,risk;
+  if(long){sl=Math.min(Math.min(...rec.map(x=>x.l))-.2*a,entry-a);if(entry-sl>3*a)sl=entry-3*a;risk=entry-sl}
+  else{sl=Math.max(Math.max(...rec.map(x=>x.h))+.2*a,entry+a);if(sl-entry>3*a)sl=entry+3*a;risk=sl-entry}
+  const d=long?1:-1;
+  return{s,dir:long?'LONG':'SHORT',score:Math.min(10,Math.round(b.s/8.5*10)),sc:b.s,vr,entry,sl,
+    tp1:entry+d*1.5*risk,tp2:entry+d*2.5*risk,risk,tags:b.t,closes:all.slice(-60).map(x=>x.c),last:all[all.length-1].c};
+}
+
+/* ---- format ---- */
+const fp=p=>{const d=p>=100?2:p>=1?4:p>=.01?5:8;return '$'+p.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d})};
+const pc=(v,e)=>{const x=(v-e)/e*100;return (x>=0?'+':'')+x.toFixed(2)+'%'};
+function spark(c){
+  const cl=c.closes,n=cl.length,W=300,H=110,lv=[c.entry,c.tp1,c.tp2,c.sl];
+  let mn=Math.min(...cl,...lv),mx=Math.max(...cl,...lv);const pd=(mx-mn)*.06;mn-=pd;mx+=pd;
+  const X=i=>i/(n-1)*W,Y=v=>(H-(v-mn)/(mx-mn)*H).toFixed(1);
+  const ln=cl.map((v,i)=>(i?'L':'M')+X(i).toFixed(1)+' '+Y(v)).join('');
+  const zone=(a,b,f)=>`<rect x="0" width="${W}" y="${Math.min(Y(a),Y(b))}" height="${Math.abs(Y(a)-Y(b)).toFixed(1)}" fill="${f}"/>`;
+  const hl=(v,col,d)=>`<line x1="0" x2="${W}" y1="${Y(v)}" y2="${Y(v)}" stroke="${col}" stroke-width="1" ${d?'stroke-dasharray="4 4"':''} vector-effect="non-scaling-stroke"/>`;
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">${zone(c.entry,c.tp2,'rgba(46,229,157,.12)')}${zone(c.entry,c.sl,'rgba(255,92,108,.14)')}${hl(c.tp2,'#2ee59d',1)}${hl(c.tp1,'#2ee59d',1)}${hl(c.entry,'rgba(255,255,255,.7)',0)}${hl(c.sl,'#ff5c6c',1)}<path d="${ln}" fill="none" stroke="#fff" stroke-width="1.6" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>`;
+}
+function stat(c,p){
+  const lg=c.dir==='LONG',r=(lg?p-c.entry:c.entry-p)/c.risk;
+  if(lg?p<=c.sl:p>=c.sl)return{t:'SL tersentuh',k:'dn',r};
+  if(lg?p>=c.tp2:p<=c.tp2)return{t:'TP2 tercapai',k:'up',r};
+  if(lg?p>=c.tp1:p<=c.tp1)return{t:'TP1 tercapai',k:'up',r};
+  if(Math.abs(r)<=.25)return{t:'Zona entry',k:'ok',r};
+  if(r>0)return{t:'Sudah berjalan',k:'up',r};
+  return{t:'Menjauhi entry',k:'dn',r};
+}
+const card=c=>{const p=px[c.s]||c.last,st=stat(c,p);
+  return `<article class="sc" data-s="${c.s}">
+  <div class="sc-h"><div class="av">${c.s[0]}</div><div class="sc-n"><b>${c.s}/USDT</b><small>Timeframe ${tf.replace('h','j')} · Skor ${c.score}/10</small></div><span class="dir ${c.dir}">${c.dir}</span></div>
+  ${spark(c)}
+  <div class="lv">
+    <div class="e"><small>Entry</small><b>${fp(c.entry)}</b></div>
+    <div class="s"><small>Stop Loss</small><b>${fp(c.sl)}</b><i>${pc(c.sl,c.entry)}</i></div>
+    <div class="t"><small>TP1 (1.5R)</small><b>${fp(c.tp1)}</b><i>${pc(c.tp1,c.entry)}</i></div>
+    <div class="t"><small>TP2 (2.5R)</small><b>${fp(c.tp2)}</b><i>${pc(c.tp2,c.entry)}</i></div>
+  </div>
+  <div class="sc-l"><span>Live <span class="lp">${fp(p)}</span></span><span class="lr">${st.r>=0?'+':''}${st.r.toFixed(2)}R</span><span class="st ${st.k}">${st.t}</span></div>
+  <div class="tags">${c.tags.map((t,i)=>`<span class="${i?'':'sk'}">${t}</span>`).join('')}</div>
+</article>`};
+
+function render(){
+  const meta=$('scrMeta');
+  if(res===null){meta.textContent='Gagal memuat data.';grid.innerHTML='<div class="scr-empty">Data pasar belum bisa dimuat.<br><button type="button" class="retry">Coba lagi</button></div>';return}
+  const list=res.filter(c=>flt==='all'||c.dir===flt);
+  meta.textContent=`${res.length} setup dari ${okN} koin · ${tf.replace('h','j')} · diperbarui ${at}`;
+  grid.innerHTML=list.length?list.map(card).join(''):'<div class="scr-empty">Belum ada setup yang cukup kuat di timeframe ini. Coba timeframe lain atau tunggu candle berikutnya.</div>';
+}
+
+/* ---- jalankan analisa semua koin ---- */
+async function run(){
+  const id=++tk,t=tf;
+  if(!res||!res.length)$('scrMeta').textContent=`Menganalisis ${COINS.length} koin…`;
+  const all=await Promise.all(COINS.map(c=>kl(c,t).then(cs=>({c,cs}))));
+  if(id!==tk||!isOpen)return;
+  const ok=all.filter(x=>x.cs&&x.cs.length>60);okN=ok.length;
+  if(!ok.length){res=null;render();return}
+  res=ok.map(x=>{if(!wsOn||!px[x.c])px[x.c]=x.cs[x.cs.length-1].c;return analyze(x.c,x.cs)})
+    .filter(Boolean).sort((a,b)=>b.sc-a.sc||b.vr-a.vr);
+  at=new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  render();
+}
+
+/* ---- harga live (WebSocket) ---- */
+function paintLive(){raf=0;dirty.forEach(s=>{
+  const el=grid.querySelector(`[data-s="${s}"]`),c=res&&res.find(x=>x.s===s);if(!el||!c)return;
+  const p=px[s],st=stat(c,p);
+  el.querySelector('.lp').textContent=fp(p);
+  el.querySelector('.lr').textContent=(st.r>=0?'+':'')+st.r.toFixed(2)+'R';
+  const e=el.querySelector('.st');e.className='st '+st.k;e.textContent=st.t});dirty.clear()}
+function wsStart(){
+  if(ws||!isOpen||!('WebSocket' in window))return;
+  let w;try{w=new WebSocket(WSH[wsHost%WSH.length]+COINS.map(c=>c.toLowerCase()+'usdt@miniTicker').join('/'))}catch(e){return}
+  ws=w;
+  w.onopen=()=>{wsDelay=1000;wsOn=true};
+  w.onmessage=e=>{try{const j=JSON.parse(e.data).data;if(j&&j.s&&+j.c>0){const k=j.s.slice(0,-4);px[k]=+j.c;dirty.add(k);if(!raf)raf=requestAnimationFrame(paintLive)}}catch(_){}};
+  w.onclose=()=>{if(ws===w){ws=null;wsOn=false;wsHost++;if(isOpen)setTimeout(wsStart,wsDelay);wsDelay=Math.min(wsDelay*2,15000)}};
+  w.onerror=()=>{try{w.close()}catch(_){}};
+}
+function wsStop(){const w=ws;ws=null;wsOn=false;if(w){w.onclose=null;try{w.close()}catch(_){}}}
+
+/* ---- buka / tutup ---- */
+function openScr(){
+  if(isOpen)return;isOpen=true;ov.hidden=false;document.body.style.overflow='hidden';
+  if(window.setMenu)setMenu(false);
+  $('scrX').focus({preventScroll:true});
+  run();wsStart();timer=setInterval(()=>{if(!document.hidden)run()},45000);
+}
+function closeScr(){
+  if(!isOpen)return;isOpen=false;ov.hidden=true;document.body.style.overflow='';
+  clearInterval(timer);wsStop();tk++;
+}
+document.querySelectorAll('[data-scr]').forEach(b=>b.addEventListener('click',openScr));
+$('scrX').onclick=closeScr;
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeScr()});
+$('scrRef').onclick=()=>run();
+grid.addEventListener('click',e=>{if(e.target.closest('.retry'))run()});
+function seg(el,fn){el.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  el.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));fn(b.dataset.v)})}
+seg($('scrTf'),v=>{tf=v;res=[];grid.innerHTML='';run()});
+seg($('scrFl'),v=>{flt=v;if(res)render()});
 })();
 </script>
 </body>
