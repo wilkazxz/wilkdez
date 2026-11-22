@@ -1493,15 +1493,69 @@ function snIn(x){
   <div class="sbs">${bar('Skor sniper',r.sc,'tot')}</div>
   <div class="fc"><div><small>Likuiditas</small><b>${cp(x.liq)}</b></div><div><small>FDV</small><b>${cp(x.fdv)}</b></div><div><small>Harga</small><b>${fpm(x.p)}</b></div><div><small>Vol 5m</small><b>${cp(x.v5)}</b></div></div>
   <div class="fc"><div><small>Harga 5m</small><b>${sgn(x.c5)}</b></div><div><small>Harga 1j</small><b>${sgn(x.c1)}</b></div><div><small>Beli/Jual 5m</small><b>${x.b5}/${x.s5}</b></div><div><small>Beli/Jual 1j</small><b>${x.b1}/${x.s1}</b></div></div>
-  ${lv}<p class="ex">${ex}</p>
-  <div class="tags">${r.fl.map(f=>`<span class="rk">${esc(f)}</span>`).join('')}<a href="https://dexscreener.com/${NET[snC]}/${x.a}" target="_blank" rel="noopener">DexScreener</a>${L}<button type="button" class="cpy" data-t="${x.tok}">Salin kontrak</button></div>`}
+  <div class="mcslot"></div>${lv}<p class="ex">${ex}</p>
+  <div class="tags">${r.fl.map(f=>`<span class="rk">${esc(f)}</span>`).join('')}<a href="https://dexscreener.com/${NET[snC]}/${x.a}" target="_blank" rel="noopener">DexScreener</a>${L}<button type="button" class="chb" data-a="${x.a}">Chart</button><button type="button" class="cpy" data-t="${x.tok}">Salin kontrak</button></div>`}
 const snCard=x=>`<article class="cw sn" data-a="${x.a}">${snIn(x)}</article>`;
 function renderSn(full){
   if(M()!=='snp')return;
   const l=snView();$('scrFng').hidden=true;
   $('scrMeta').textContent=`${snp.size} pool baru dipantau · ${l.length} tampil · diperbarui ${clock()} · harga live tiap 5 detik`;
-  if(full||!grid.querySelector('.sn')){grid.innerHTML=l.length?l.map(snCard).join(''):`<div class="scr-empty">${snp.size?'Belum ada token yang lolos filter.':'Memuat pool baru…'}</div>`;return}
-  l.forEach(x=>{const el=grid.querySelector(`.sn[data-a="${x.a}"]`);if(!el)return;const old=el.querySelector('.av');el.innerHTML=snIn(x);const nw=el.querySelector('.av');if(old&&nw&&old.dataset.k===nw.dataset.k)nw.replaceWith(old)})}
+  const k=l.map(x=>x.a).join();
+  if((full&&grid._sk!==k)||!grid.querySelector('.sn')){grid.innerHTML=l.length?l.map(snCard).join(''):`<div class="scr-empty">${snp.size?'Belum ada token yang lolos filter.':'Memuat pool baru…'}</div>`;grid._sk=k;reMc();return}
+  l.forEach(x=>{const el=grid.querySelector(`.sn[data-a="${x.a}"]`);if(!el)return;const old=el.querySelector('.av');el.innerHTML=snIn(x);const nw=el.querySelector('.av');if(old&&nw&&old.dataset.k===nw.dataset.k)nw.replaceWith(old);
+    if(mc&&mc.a===x.a){const sl=el.querySelector('.mcslot');if(sl)sl.replaceWith(mc.el)}})}
+/* ===== CHART MEME COIN: candle 1 menit (riwayat GeckoTerminal) atau 1 detik; harga live DexScreener tiap detik ===== */
+let mc=null;
+const fpc=v=>v>=.01?fp(v):'$'+(+v).toFixed(Math.min(14,Math.ceil(-Math.log10(v||1))+3));
+function mcStop(){if(!mc)return;const c=mc;mc=null;c.dead=1;clearTimeout(c.t);if(c.el.parentNode){const d=document.createElement('div');d.className='mcslot';c.el.replaceWith(d)}}
+function reMc(){if(!mc)return;const sl=grid.querySelector(`.sn[data-a="${mc.a}"] .mcslot`);if(sl)sl.replaceWith(mc.el);else mcStop()}
+function mcOpen(a){
+  const same=mc&&mc.a===a;mcStop();if(same||!snp.get(a))return;
+  const el=document.createElement('div');el.className='mc';
+  el.innerHTML='<div class="mch"><div class="seg"><button type="button" data-m="1m" aria-pressed="true">1 mnt</button><button type="button" data-m="1s" aria-pressed="false">1 dtk</button></div><b class="mcp">—</b></div><div class="cc mcc"></div><p class="nd mcn">Memuat chart…</p>';
+  mc={a,mode:'1m',m:[],s:[],el,t:0,dead:0,err:0};
+  const sl=grid.querySelector(`.sn[data-a="${a}"] .mcslot`);if(sl)sl.replaceWith(el);
+  mcLoad();mcLoop();
+}
+async function mcLoad(){
+  const c=mc;if(!c)return;
+  try{const j=await getJ(`https://api.geckoterminal.com/api/v2/networks/${NET[snC]}/pools/${c.a}/ohlcv/minute?aggregate=1&limit=120&currency=usd`,10000);
+    if(c.dead)return;
+    const l=((j.data&&j.data.attributes&&j.data.attributes.ohlcv_list)||[]).map(r=>({t:r[0]*1000,o:+r[1],h:+r[2],l:+r[3],c:+r[4]})).reverse(),lt=l.length?l[l.length-1].t:0;
+    c.m=l.concat(c.m.filter(k=>k.t>lt));c.err=0}catch(e){if(!c.dead)c.err=1}
+  mcDraw();
+}
+function mcTick(c,p,now){
+  const up=(arr,st,max)=>{const t=Math.floor(now/st)*st,l=arr[arr.length-1];
+    if(l&&l.t===t){l.c=p;if(p>l.h)l.h=p;if(p<l.l)l.l=p}
+    else{const o=l?l.c:p;arr.push({t,o,h:Math.max(o,p),l:Math.min(o,p),c:p});while(arr.length>max)arr.shift()}};
+  up(c.m,6e4,150);up(c.s,1e3,150);
+}
+async function mcLoop(){
+  const c=mc;if(!c||c.dead)return;
+  if(!c.el.isConnected){mcStop();return}
+  try{const j=await getJ(`https://api.dexscreener.com/latest/dex/pairs/${NET[snC]}/${c.a}`,4000),q=j.pairs&&j.pairs[0];
+    if(!c.dead&&q&&N(q.priceUsd)>0){const p=N(q.priceUsd),x=snp.get(c.a);if(x)x.p=p;mcTick(c,p,Date.now());mcDraw()}}catch(e){}
+  if(!c.dead)c.t=setTimeout(mcLoop,1000);
+}
+function mcDraw(){
+  const c=mc;if(!c||c.dead)return;
+  const cs=(c.mode==='1m'?c.m:c.s).slice(-60),n=cs.length,box=c.el.querySelector('.mcc'),nt=c.el.querySelector('.mcn');
+  if(n<2){box.innerHTML='';nt.textContent=c.mode==='1s'?'Mengumpulkan data per detik… chart terbentuk dari harga live sejak dibuka.':c.err?'Riwayat 1 menit belum bisa dimuat (batas request GeckoTerminal). Chart tetap terbentuk dari harga live.':'Memuat chart…';return}
+  const W=320,H=160,R=60,cw=(W-R)/n,bw=Math.max(1,cw*.62);
+  let mn=Math.min(...cs.map(x=>x.l)),mx=Math.max(...cs.map(x=>x.h));const pd=(mx-mn)*.06||mx*.002;mn-=pd;mx+=pd;
+  const Y=v=>H-(v-mn)/(mx-mn)*H,f=v=>Y(v).toFixed(1);let k='';
+  cs.forEach((d,i)=>{const x=i*cw+cw/2,cl=d.c>=d.o?'#2ee59d':'#ff5c6c',yo=Y(d.o),yc=Y(d.c);
+    k+=`<line x1="${x.toFixed(1)}" x2="${x.toFixed(1)}" y1="${f(d.h)}" y2="${f(d.l)}" stroke="${cl}" stroke-width="1"/><rect x="${(x-bw/2).toFixed(1)}" y="${Math.min(yo,yc).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(1,Math.abs(yo-yc)).toFixed(1)}" fill="${cl}"/>`});
+  const lc=cs[n-1],col=lc.c>=cs[0].o?'#2ee59d':'#ff5c6c',lab=(v,t,cl)=>`<text x="${W-R+4}" y="${Math.max(9,Math.min(H-2,Y(v)+3)).toFixed(1)}" fill="${cl}">${t}</text>`;
+  box.innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Chart ${c.mode==='1m'?'1 menit':'1 detik'}">${k}<line x1="0" x2="${W-R}" y1="${f(lc.c)}" y2="${f(lc.c)}" stroke="${col}" stroke-width=".8" stroke-dasharray="2 3"/>${lab(lc.c,fpc(lc.c),col)}${lab(Math.max(...cs.map(x=>x.h)),fpc(Math.max(...cs.map(x=>x.h))),'rgba(255,255,255,.5)')}${lab(Math.min(...cs.map(x=>x.l)),fpc(Math.min(...cs.map(x=>x.l))),'rgba(255,255,255,.5)')}</svg>`;
+  c.el.querySelector('.mcp').textContent=fpc(lc.c);
+  nt.textContent=c.mode==='1m'?`Candle 1 menit · ${n} bar · riwayat GeckoTerminal + harga live tiap detik`:`Candle 1 detik · ${n} bar · dibangun dari harga live DexScreener sejak chart dibuka`;
+}
+grid.addEventListener('click',e=>{
+  const b=e.target.closest('.chb');if(b){mcOpen(b.dataset.a);return}
+  const m=e.target.closest('.mc [data-m]');
+  if(m&&mc){mc.mode=m.dataset.m;mc.el.querySelectorAll('[data-m]').forEach(x=>x.setAttribute('aria-pressed',x===m));mcDraw()}});
 async function snFetch(){
   const c=snC,got=[];
   for(const pg of [1,2]){try{const j=await getJ(`https://api.geckoterminal.com/api/v2/networks/${NET[c]}/new_pools?include=base_token&page=${pg}`,10000);
@@ -1521,7 +1575,7 @@ async function snPoll(){
       const t=q.txns||{},v=q.volume||{},pc=q.priceChange||{},t5=t.m5||{},t1=t.h1||{};
       Object.assign(x,{p:N(q.priceUsd)||x.p,liq:N(q.liquidity&&q.liquidity.usd)||x.liq,fdv:N(q.fdv)||x.fdv,v5:N(v.m5),v1:N(v.h1),c5:N(pc.m5),c1:N(pc.h1),b5:N(t5.buys),s5:N(t5.sells),b1:N(t1.buys),s1:N(t1.sells),ds:Date.now()});if(q.info&&q.info.imageUrl)x.img=q.info.imageUrl});
     renderSn(0)}catch(e){}}
-function snStop(){clearInterval(snT);clearInterval(snP);snT=snP=0}
+function snStop(){clearInterval(snT);clearInterval(snP);snT=snP=0;mcStop()}
 function runSn(){snStop();vis();renderSn(1);snFetch();snT=setInterval(snFetch,20000);snP=setInterval(snPoll,5000)}
 seg($('scrCh'),v=>{snC=v;snp.clear();grid.innerHTML='';runSn()});
 seg($('scrSn'),v=>{snF=v;renderSn(1)});
@@ -2000,6 +2054,13 @@ b.onclick=async()=>{if(!ev)return;b.hidden=true;ev.prompt();try{await ev.userCho
 addEventListener('appinstalled',()=>{b.hidden=true;ev=null});
 })();
 </script>
+<style id="mcss">
+.mc{border:1px solid var(--line);border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:8px;background:rgba(255,255,255,.03)}
+.mch{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.mch .seg button{height:32px;min-width:52px}
+.mcp{font-variant-numeric:tabular-nums;font-weight:600;font-size:.95rem}
+.mcc svg{height:auto}
+</style>
 <style id="mobfix">
 /* ===== RAPI DI HP: panel Crypto, Saham AS, semua Screener, Listing Baru ===== */
 .scr{overflow-x:hidden}
