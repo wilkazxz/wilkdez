@@ -2,7 +2,8 @@
    Tombol "Entry via Demo" di tiap kartu screener membuka posisi demo dengan Entry/SL/TP1/TP2 dari kartu itu (TERKUNCI, otomatis).
    User cukup isi nominal modal. Ekuitas & PnL bergerak realtime. Kena TP1 / TP2 / SL = posisi langsung selesai (ditutup penuh).
    Harga REAL-TIME: Binance WebSocket (+ cadangan REST bila WS terblokir), PumpPortal WebSocket (token pump.fun, tidak resmi),
-   DexScreener (token DEX Solana/Base/BSC). Uang virtual, tersimpan di localStorage. TP/SL jalan selama halaman terbuka. */
+   DexScreener (token DEX Solana/Base/BSC). Uang virtual, tersimpan di localStorage. TP/SL jalan selama halaman terbuka.
+   v3: tampilan portofolio 2 kolom (laptop) / 1 kolom (HP), grafik ekuitas, modal entry jadi bottom sheet di HP, ikon koin berantai. */
 (()=>{
 'use strict';
 if(window.__wdDemo)return;window.__wdDemo=1;
@@ -23,9 +24,10 @@ const getJ=async(u,ms=8000)=>{const c=new AbortController(),t=setTimeout(()=>c.a
   try{const r=await fetch(u,{signal:c.signal});if(!r.ok)throw new Error(r.status);return await r.json()}finally{clearTimeout(t)}};
 
 /* ---------- akun ---------- */
-const fresh=s=>({cash:s,start:s,pos:{},hist:[],rl:0,w:0,n:0});
+const fresh=s=>({cash:s,start:s,pos:{},hist:[],rl:0,w:0,n:0,eqh:[]});
 let A;try{A=JSON.parse(localStorage.getItem(KEY));if(!A||!A.pos)A=null}catch(e){A=null}
 if(!A)A=fresh(10000000);
+if(!Array.isArray(A.eqh))A.eqh=[];
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(A))}catch(e){}};
 let fx=0,fxAt=0,solUsd=0,cur=null,isOpen=false,entryOpen=false;
 const P={},H={},st={bn:0,pump:0,dex:0};
@@ -40,32 +42,34 @@ function net(q,qty,mk){const p=pidr(q.id);if(p==null)return null;const i=mk?0:im
 function equity(){let e=A.cash;Object.values(A.pos).forEach(q=>{const v=net(q,q.qty,1);e+=v==null?q.cost:v});return e}
 function floating(){let f=0;Object.values(A.pos).forEach(q=>{const v=net(q,q.qty,1);if(v!=null)f+=v-q.cost});return f}
 
-/* ---------- ikon koin ---------- */
-/* ikon dicoba berurutan dari banyak sumber: ikon kartu screener, cache CoinGecko, CoinCap, spothq, DexScreener.
-   Jika satu gagal dimuat, otomatis pindah ke sumber berikutnya; huruf pertama hanya dipakai bila semuanya gagal. */
+/* ---------- ikon koin (berantai) ----------
+   Dicoba berurutan: ikon dari kartu screener, cache CoinGecko, CoinCap, spothq, DexScreener, pump.fun.
+   Gagal satu -> otomatis pindah ke sumber berikutnya. Kalau semua gagal, tampil huruf pertama di lingkaran berwarna. */
 const ICK='wd_dmicons';let IC={};try{IC=JSON.parse(localStorage.getItem(ICK)||'{}')||{}}catch(e){IC={}}
 const fundImg=s=>{try{const c=JSON.parse(localStorage.getItem('wd_fund2')||'null');return(c&&c.f&&c.f[s]&&c.f[s].img)||''}catch(e){return''}};
 function iconSrcs(o){
-  const s=[],add=u=>{if(u&&/^https:\/\//.test(u)&&!s.includes(u))s.push(u)};
+  const s=[],add=u=>{if(u&&/^https:\/\//.test(u)&&!/missing/i.test(u)&&!s.includes(u))s.push(u)};
   add(o.img);add(P[o.id]&&P[o.id].img);
   if(o.kind==='c'){const L=String(o.sym).toLowerCase();
     add(IC[o.sym]);add(fundImg(o.sym));
     add(`https://assets.coincap.io/assets/icons/${L}@2x.png`);
     add(`https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/${L}.png`)}
-  else add(`https://dd.dexscreener.com/ds-data/tokens/${o.chain}/${o.addr}.png`);
+  else{
+    add(`https://dd.dexscreener.com/ds-data/tokens/${o.chain}/${o.addr}.png`);
+    if(o.chain==='solana')add(`https://images.pump.fun/coin-image/${o.addr}?variant=86x86`)}
   return s}
-const iconHtml=o=>{const L=esc((o.sym||'?')[0]),s=iconSrcs(o);
-  return `<span class="av dmav" data-sym="${esc(o.sym)}" data-k="${o.kind}"><span class="lt">${L}</span>${s.length?`<img class="dmi" src="${esc(s[0])}" data-q="${esc(JSON.stringify(s.slice(1)))}" alt="" referrerpolicy="no-referrer">`:''}</span>`};
-document.addEventListener('error',e=>{const im=e.target;if(!im||im.tagName!=='IMG'||!im.classList.contains('dmi'))return;
-  let q;try{q=JSON.parse(im.dataset.q||'[]')}catch(x){q=[]}
-  const n=q.shift();if(n){im.dataset.q=JSON.stringify(q);im.src=n}else im.remove()},true);
+const hue=n=>{let h=0;for(const c of String(n))h=(h*31+c.charCodeAt(0))%360;return h};
+const avBg=n=>{const h=hue(n);return `background:linear-gradient(135deg,hsl(${h} 55% 40%),hsl(${(h+45)%360} 55% 18%))`};
+const ONERR="var q=[];try{q=JSON.parse(this.dataset.q||'[]')}catch(e){}var n=q.shift();if(n){this.dataset.q=JSON.stringify(q);this.src=n}else this.remove()";
+const iconHtml=o=>{const L=esc(String(o.sym||'?')[0].toUpperCase()),s=iconSrcs(o);
+  return `<span class="av dmav" data-sym="${esc(o.sym)}" data-k="${o.kind}" style="${avBg(o.sym)}"><span class="lt">${L}</span>${s.length?`<img class="dmi" src="${esc(s[0])}" data-q="${esc(JSON.stringify(s.slice(1)))}" alt="" referrerpolicy="no-referrer" onload="this.classList.add('ok')" onerror="${ONERR}">`:''}</span>`};
 /* koin yang belum punya ikon: ambil gambar resmi dari CoinGecko sekali, simpan di browser */
 const icTry=new Set();
 async function ensureIcon(o){
   if(!o||o.kind!=='c'||IC[o.sym]||icTry.has(o.sym))return;icTry.add(o.sym);
   try{const j=await getJ(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&symbols=${encodeURIComponent(String(o.sym).toLowerCase())}&per_page=1`,10000);
     const u=j&&j[0]&&j[0].image;if(!u)return;IC[o.sym]=u;try{localStorage.setItem(ICK,JSON.stringify(IC))}catch(e){}
-    document.querySelectorAll('.dmav[data-k="c"]').forEach(el=>{if(el.dataset.sym===o.sym)el.outerHTML=iconHtml({kind:'c',sym:o.sym,id:'c:'+o.sym})})}catch(e){icTry.delete(o.sym)}}
+    document.querySelectorAll('.dmav[data-k="c"]').forEach(el=>{if(el.dataset.sym===o.sym&&!el.querySelector('img.ok'))el.outerHTML=iconHtml({kind:'c',sym:o.sym,id:'c:'+o.sym})})}catch(e){icTry.delete(o.sym)}}
 
 /* ---------- riwayat candle 1 menit per posisi (untuk chart mini) ---------- */
 async function seedHist(q){
@@ -214,66 +218,141 @@ function stop(){clearInterval(pollT);clearInterval(fxT);clearInterval(hbT);pollT
   const a=bw,b=pw;bw=pw=null;st.bn=st.pump=st.dex=0;try{a&&a.close()}catch(e){}try{b&&b.close()}catch(e){}}
 const idle=()=>{if(!active())stop()};
 
+/* ---------- grafik ekuitas (dicatat tiap 5 detik selama panel/posisi aktif) ---------- */
+let eqT=0,svT=0;
+function rec(){
+  const n=Date.now();if(n-eqT<5000||!fx)return;
+  if(!isOpen&&!Object.keys(A.pos).length)return;
+  eqT=n;A.eqh.push([n,equity()]);if(A.eqh.length>360)A.eqh.shift();
+  if(n-svT>30000){svT=n;save()}}
+function eqSvg(){
+  const d=A.eqh;if(d.length<2)return '<p class="dm-nd">Grafik ekuitas terbentuk selagi panel ini terbuka…</p>';
+  const W=320,Hh=120,vs=d.map(x=>x[1]).concat(A.start);let mn=Math.min(...vs),mx=Math.max(...vs);const pd=(mx-mn)*.12||mx*.001;mn-=pd;mx+=pd;
+  const t0=d[0][0],sp=d[d.length-1][0]-t0||1,X=t=>(t-t0)/sp*W,Y=v=>Hh-(v-mn)/(mx-mn)*Hh;
+  const up=d[d.length-1][1]>=A.start,col=up?'#2ee59d':'#ff5c6c';
+  const ln=d.map((p,i)=>(i?'L':'M')+X(p[0]).toFixed(1)+' '+Y(p[1]).toFixed(1)).join('');
+  const by=Y(A.start).toFixed(1);
+  return `<svg viewBox="0 0 ${W} ${Hh}" preserveAspectRatio="none" role="img" aria-label="Grafik ekuitas"><defs><linearGradient id="dmg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${col}" stop-opacity=".3"/><stop offset="1" stop-color="${col}" stop-opacity="0"/></linearGradient></defs><line x1="0" x2="${W}" y1="${by}" y2="${by}" stroke="rgba(255,255,255,.3)" stroke-dasharray="3 4" vector-effect="non-scaling-stroke"/><path d="${ln}L${W} ${Hh}L0 ${Hh}Z" fill="url(#dmg)"/><path d="${ln}" fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>`}
+
 /* ---------- UI ---------- */
 const css=document.createElement('style');css.textContent=`
-.dm-go{display:block;width:100%;margin-top:10px;height:42px;border-radius:999px;border:1px solid #2ee59d;color:#2ee59d;font-weight:600;font-size:.88rem;background:rgba(46,229,157,.08)}
+/* tombol di kartu screener */
+.dm-go{display:block;width:100%;margin-top:10px;height:44px;border-radius:999px;border:1px solid #2ee59d;color:#2ee59d;font-weight:600;font-size:.88rem;background:rgba(46,229,157,.08);transition:background .2s}
 .dm-go:hover{background:rgba(46,229,157,.2)}
-.dm-run{position:sticky;top:0;z-index:6;display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;background:#000;border-bottom:1px solid var(--line);padding:8px 0 10px;margin:-4px 0 12px}
-.dm-run small{color:var(--muted);font-size:.78rem}
-.dm-run b{font-size:clamp(1.15rem,4.5vw,1.6rem);font-weight:600;font-variant-numeric:tabular-nums;transition:color .5s}
-.dm-run span{font-variant-numeric:tabular-nums;font-size:.9rem;font-weight:500}
-.dm-st{display:flex;gap:14px;flex-wrap:wrap;color:var(--muted);font-size:.8rem;margin:0 0 14px}
-.dm-st i{display:inline-block;width:8px;height:8px;border-radius:50%;background:#ff5c6c;margin-right:6px}.dm-st i.on{background:#2ee59d}
-.dm-sum{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:10px}
-.dm-c{border:1px solid var(--line);border-radius:18px;background:rgba(255,255,255,.04);padding:14px;min-width:0}
-.dm-c small,.dm-r small,.dm-meta{color:var(--muted);font-size:.78rem}.dm-c small{display:block}
-.dm-c b{font-size:1.1rem;font-weight:600;font-variant-numeric:tabular-nums;word-break:break-word;transition:color .5s}
-.dm-wr{color:var(--muted);font-size:.82rem;margin:0 0 16px}
-.dm-p{border:1px solid var(--line);border-radius:22px;background:rgba(255,255,255,.04);padding:16px;margin-bottom:16px}
-.dm-h3{font-size:1rem;font-weight:500;margin:8px 0 10px}
-.dm-up{color:#2ee59d}.dm-dn{color:#ff5c6c}.dm-top{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+/* ikon */
+.dmav{width:38px;height:38px;font-size:.9rem;color:#fff}
+.dmav .dmi{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .25s;background:#111}
+.dmav .dmi.ok{opacity:1}
+.dmav .lt{position:absolute;inset:0;display:grid;place-items:center;font-weight:600}
+/* kerangka panel */
+#dm .scr-in{max-width:1240px}
+#dm .scr-top{align-items:center}
+.dm-run{position:sticky;top:0;z-index:6;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  background:rgba(0,0,0,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--line);border-radius:20px;padding:12px 18px;margin:0 0 14px}
+.dm-run small{color:var(--muted);font-size:.78rem;display:block}
+.dm-run b{display:block;font-size:clamp(1.3rem,5vw,2rem);font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.02em;transition:color .5s}
+.dm-run .dm-chip{padding:6px 14px;border-radius:999px;font-weight:500;font-size:.9rem;font-variant-numeric:tabular-nums;background:rgba(255,255,255,.08)}
+.dm-run .dm-chip.dm-up{background:rgba(46,229,157,.12)}.dm-run .dm-chip.dm-dn{background:rgba(255,92,108,.12)}
+.dm-st{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px}
+.dm-st span{display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border:1px solid var(--line);border-radius:999px;color:var(--muted);font-size:.76rem}
+.dm-st i{display:inline-block;width:7px;height:7px;border-radius:50%;background:#ff5c6c}.dm-st i.on{background:#2ee59d}
+.dm-grid{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:20px;align-items:start}
+.dm-col{display:flex;flex-direction:column;gap:16px;min-width:0}
+.dm-sum{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.dm-c{border:1px solid var(--line);border-radius:18px;background:rgba(255,255,255,.04);padding:14px 16px;min-width:0}
+.dm-c small{display:block;color:var(--muted);font-size:.76rem;margin-bottom:2px}
+.dm-c b{display:block;font-size:1.05rem;font-weight:600;font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis;transition:color .5s}
+.dm-card{border:1px solid var(--line);border-radius:22px;background:rgba(255,255,255,.04);padding:16px;min-width:0}
+.dm-hd{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 12px}
+.dm-h3{font-size:1.02rem;font-weight:500}
+.dm-hd small{color:var(--muted);font-size:.8rem}
+.dm-wr{color:var(--muted);font-size:.8rem;margin-top:10px;line-height:1.5}
+.dm-eqc svg{width:100%;height:130px;display:block}
+.dm-up{color:#2ee59d}.dm-dn{color:#ff5c6c}
 .dm-fu{color:#2ee59d!important;transition:none!important}.dm-fd{color:#ff5c6c!important;transition:none!important}
-.dm-b{height:44px;border-radius:999px;border:1px solid var(--line);padding:0 16px;font-size:.88rem;white-space:nowrap;color:#fff}
-.dm-b:hover{background:rgba(255,255,255,.12)}.dm-b.s{height:34px;padding:0 12px;font-size:.8rem}
+/* tombol */
+.dm-b{height:44px;border-radius:999px;border:1px solid var(--line);padding:0 16px;font-size:.88rem;white-space:nowrap;color:#fff;transition:background .2s}
+.dm-b:hover{background:rgba(255,255,255,.12)}.dm-b.s{height:38px;padding:0 14px;font-size:.82rem}
 .dm-buy{background:#2ee59d;color:#000;font-weight:600;width:100%;border-color:#2ee59d}.dm-buy:hover{background:#5df0b8}
 .dm-buy.S{background:#ff5c6c;border-color:#ff5c6c}.dm-buy.S:hover{background:#ff8591}.dm-buy[disabled]{opacity:.4;cursor:not-allowed}
-.dm-sell{background:#ff5c6c;color:#000;border-color:#ff5c6c}.dm-sell:hover{background:#ff8591}
-.dm-in{height:44px;padding:0 14px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.05);color:#fff;font:inherit;font-size:16px;width:100%;min-width:0;outline:0}
+.dm-sell{background:#ff5c6c;color:#000;border-color:#ff5c6c;font-weight:500}.dm-sell:hover{background:#ff8591}
+.dm-in{height:50px;padding:0 16px;border-radius:14px;border:1px solid var(--line);background:rgba(255,255,255,.05);color:#fff;font:inherit;font-size:16px;width:100%;min-width:0;outline:0}
 .dm-in:focus{border-color:#fff}
-.dm-pos{border-top:1px solid rgba(255,255,255,.08);padding:14px 0}.dm-pos:first-child{border-top:0}
-.dm-ph{display:flex;align-items:center;gap:10px}.dm-ph .av,.dm-ttl .av{width:36px;height:36px;font-size:.85rem}
-.dm-ttl{display:inline-flex;align-items:center;gap:10px}
-.dm-r{text-align:right;display:flex;flex-direction:column;flex-shrink:0}.dm-r b{font-size:.9rem;font-variant-numeric:tabular-nums}
-.dm-sd{font-size:.68rem;padding:2px 8px;border-radius:999px;margin-left:6px;vertical-align:middle;border:1px solid}
+/* posisi */
+.dm-list{display:flex;flex-direction:column;gap:14px}
+.dm-pos{border:1px solid var(--line);border-radius:22px;background:rgba(255,255,255,.04);padding:16px;min-width:0}
+.dm-pos.L{border-left:3px solid #2ee59d}.dm-pos.S{border-left:3px solid #ff5c6c}
+.dm-ph{display:flex;align-items:center;gap:12px}
+.dm-pn{flex:1;min-width:0}.dm-pn b{font-size:1.05rem;font-weight:600}
+.dm-pn small{display:block;color:var(--muted);font-size:.76rem;margin-top:1px}
+.dm-sd{font-size:.68rem;padding:2px 9px;border-radius:999px;margin-left:8px;vertical-align:middle;border:1px solid}
 .dm-sd.L{color:#2ee59d;border-color:#2ee59d}.dm-sd.S{color:#ff5c6c;border-color:#ff5c6c}
-.sc-n small{display:block;color:var(--muted);font-size:.78rem}
-.dm-lv{display:flex;gap:6px 14px;flex-wrap:wrap;margin:10px 0 0;font-size:.78rem;color:var(--muted);font-variant-numeric:tabular-nums}.dm-lv b{color:#fff;font-weight:500}
-.dm-pg{position:relative;height:8px;border-radius:8px;background:rgba(255,255,255,.1);margin:16px 6px 26px}
+.dm-r{text-align:right;display:flex;flex-direction:column;flex-shrink:0}.dm-r b{font-size:1rem;font-variant-numeric:tabular-nums;transition:color .5s}
+.dm-r small{font-size:.78rem;font-variant-numeric:tabular-nums}
+.dm-pg{position:relative;height:8px;border-radius:8px;background:rgba(255,255,255,.1);margin:18px 8px 28px}
 .dm-pg i{position:absolute;top:0;bottom:0;display:block}
 .dm-pg .r{left:0;background:rgba(255,92,108,.55);border-radius:8px 0 0 8px}
 .dm-pg .g{background:rgba(46,229,157,.55);border-radius:0 8px 8px 0}
 .dm-pg s{position:absolute;top:-4px;width:2px;height:16px;background:#fff;text-decoration:none;transform:translateX(-1px)}
 .dm-pg .px{width:14px;height:14px;top:-3px;bottom:auto;border-radius:50%;background:#fff;border:3px solid #000;box-shadow:0 0 0 1px rgba(255,255,255,.6);transform:translateX(-7px);transition:left .3s}
 .dm-pg em{position:absolute;top:15px;font-style:normal;font-size:.66rem;color:var(--muted);transform:translateX(-50%);white-space:nowrap}
-.dm-pcc{margin-top:10px}.dm-pcc .cc{max-width:300px}
-.dm-pa{display:flex;gap:8px;margin-top:12px}
-.dm-nd{color:var(--muted);font-size:.88rem;padding:8px 0}
-.dm-tw{overflow-x:auto}.dm-t{width:100%;border-collapse:collapse;font-size:.82rem;font-variant-numeric:tabular-nums}
-.dm-t th{color:var(--muted);font-weight:400;text-align:left;padding:6px 8px}.dm-t td{padding:8px;border-top:1px solid rgba(255,255,255,.08);white-space:nowrap}
-.dm-top select{height:34px;border-radius:999px;border:1px solid var(--line);background:#111;color:#fff;padding:0 10px;font:inherit;font-size:.8rem}
-.dm-ov{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.78);overflow-y:auto;display:flex;align-items:flex-start;justify-content:center;padding:calc(20px + env(safe-area-inset-top)) 14px calc(20px + env(safe-area-inset-bottom))}
+.dm-tiles{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.dm-tiles div{padding:8px 10px;border:1px solid var(--line);border-radius:12px;min-width:0}
+.dm-tiles small{display:block;color:var(--muted);font-size:.68rem}
+.dm-tiles b{display:block;font-size:.84rem;font-weight:500;font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dm-tiles .s b{color:#ff5c6c}.dm-tiles .t b{color:#2ee59d}
+.dm-pcc{margin-top:12px}.dm-pcc .cc{max-width:none}
+.dm-mt{display:flex;gap:6px 16px;flex-wrap:wrap;margin-top:12px;color:var(--muted);font-size:.78rem}.dm-mt b{color:#fff;font-weight:500;font-variant-numeric:tabular-nums}
+.dm-pa{display:flex;gap:8px;margin-top:14px}.dm-pa .dm-b{flex:1}
+.dm-nd{color:var(--muted);font-size:.88rem;padding:10px 0;line-height:1.5}
+.dm-empty{border:1px dashed var(--line);border-radius:22px;padding:30px 18px;text-align:center;color:var(--muted);font-size:.9rem;line-height:1.6}
+/* riwayat */
+.dm-hist{display:flex;flex-direction:column;max-height:520px;overflow-y:auto;margin:0 -4px;padding:0 4px;-webkit-overflow-scrolling:touch}
+.dm-hr2{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 0;border-top:1px solid rgba(255,255,255,.08)}
+.dm-hr2:first-child{border-top:0}
+.dm-hr2 b{font-weight:500;font-size:.9rem}.dm-hr2 small{display:block;color:var(--muted);font-size:.74rem;margin-top:1px}
+.dm-hr2 .r{text-align:right;font-variant-numeric:tabular-nums;flex-shrink:0}
+.dm-tag{display:inline-block;font-size:.66rem;padding:1px 8px;border-radius:999px;border:1px solid var(--line);margin-right:6px;vertical-align:middle;color:var(--muted)}
+.dm-tag.L{color:#2ee59d;border-color:rgba(46,229,157,.5)}.dm-tag.S{color:#ff5c6c;border-color:rgba(255,92,108,.5)}
+.dm-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px}
+.dm-tools select{height:38px;border-radius:999px;border:1px solid var(--line);background:#111;color:#fff;padding:0 12px;font:inherit;font-size:.82rem;flex:1;min-width:130px}
+.dm-note{color:var(--muted);font-size:.78rem;line-height:1.65;margin-top:22px;max-width:90ch}.dm-note b{color:#fff;font-weight:500}
+/* modal entry */
+.dm-ov{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.78);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);overflow-y:auto;display:flex;align-items:center;justify-content:center;padding:calc(20px + env(safe-area-inset-top)) 14px calc(20px + env(safe-area-inset-bottom))}
 .dm-ov[hidden]{display:none}
-.dm-md{width:100%;max-width:480px;margin:auto;background:#0b0b0b;border:1px solid var(--line);border-radius:24px;padding:20px}
-.dm-px{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:10px 0}
-.dm-px b{font-size:clamp(1.4rem,5vw,1.9rem);font-weight:600;font-variant-numeric:tabular-nums}
+.dm-md{width:100%;max-width:480px;margin:auto;background:#0b0b0b;border:1px solid var(--line);border-radius:26px;padding:20px;animation:dmUp .25s ease-out}
+@keyframes dmUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+.dm-top{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.dm-ttl{display:inline-flex;align-items:center;gap:12px}
+.dm-px{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:12px 0}
+.dm-px b{font-size:clamp(1.5rem,6vw,2rem);font-weight:600;font-variant-numeric:tabular-nums}
+.dm-meta{color:var(--muted);font-size:.8rem}
 .dm-bdg{font-size:.7rem;padding:3px 10px;border-radius:999px;border:1px solid var(--line)}
-.dm-lock{font-size:.78rem;color:#2ee59d;margin:0 0 6px}
-.dm-q{display:flex;gap:8px;margin:8px 0;flex-wrap:wrap}
-.dm-est{font-size:.82rem;color:var(--muted);margin:8px 0 12px;line-height:1.55;min-height:3em}.dm-est.e{color:#ffd166}
+.dm-lock{font-size:.78rem;color:#2ee59d;margin:0 0 10px}
+.dm-lvg{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.dm-lvg div{padding:10px 12px;border:1px solid var(--line);border-radius:14px;min-width:0}
+.dm-lvg small{display:block;color:var(--muted);font-size:.72rem}
+.dm-lvg b{display:block;font-weight:500;font-size:.95rem;font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis}
+.dm-lvg i{font-style:normal;font-size:.74rem}
+.dm-lvg .s b{color:#ff5c6c}.dm-lvg .t b{color:#2ee59d}
+.dm-q{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0}
+.dm-est{font-size:.82rem;color:var(--muted);margin:10px 0 14px;line-height:1.6;min-height:3.2em}.dm-est.e{color:#ffd166}
 .dm-toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translate(-50%,20px);z-index:400;padding:12px 20px;border-radius:999px;background:#111;border:1px solid var(--line);font-size:.88rem;opacity:0;pointer-events:none;transition:.25s;max-width:92vw;text-align:center}
 .dm-toast.on{opacity:1;transform:translate(-50%,0)}.dm-toast.up{border-color:#2ee59d}.dm-toast.dn{border-color:#ff5c6c}
 #dmOpen{font-variant-numeric:tabular-nums}
-@media(max-width:860px){.dm-sum{grid-template-columns:repeat(2,1fr)}}`;
+/* laptop kecil / tablet */
+@media(max-width:1000px){.dm-grid{grid-template-columns:1fr}.dm-col.r1{order:2}}
+/* HP */
+@media(max-width:640px){
+  .dm-run{padding:10px 14px;border-radius:16px;top:6px}
+  .dm-sum{grid-template-columns:repeat(2,1fr)}
+  .dm-tiles{grid-template-columns:repeat(3,1fr)}
+  .dm-pos,.dm-card{padding:14px;border-radius:18px}
+  .dm-pa .dm-b{height:44px}
+  .dm-ov{align-items:flex-end;padding:0}
+  .dm-md{max-width:none;margin:0;border-radius:26px 26px 0 0;border-bottom:0;padding:20px 16px calc(20px + env(safe-area-inset-bottom));max-height:94dvh;overflow-y:auto}
+  .dm-hist{max-height:none}
+}`;
 document.head.append(css);
 
 /* panel akun demo (portofolio) */
@@ -281,31 +360,38 @@ const root=document.createElement('div');root.id='dm';root.className='scr';root.
 root.setAttribute('role','dialog');root.setAttribute('aria-modal','true');root.setAttribute('aria-label','Akun Demo');
 root.innerHTML=`<div class="scr-in">
 <div class="scr-top"><div><p class="btc-tag"><i class="live"></i>Akun Demo · Rupiah · Harga realtime</p><h2>Portofolio Demo</h2></div><button class="scr-x" id="dmX" type="button" aria-label="Tutup">&times;</button></div>
-<div class="dm-run"><div><small>Saldo berjalan (live)</small><br><b id="dmRunV">—</b></div><span id="dmRunP"></span></div>
+<div class="dm-run"><div><small>Saldo berjalan (live)</small><b id="dmRunV">—</b></div><span class="dm-chip" id="dmRunP"></span></div>
 <div class="dm-st" id="dmSt"></div>
-<div class="dm-sum">
- <div class="dm-c"><small>Ekuitas (live)</small><b id="dmEq">—</b></div>
- <div class="dm-c"><small>Saldo tunai</small><b id="dmCash">—</b></div>
- <div class="dm-c"><small>Total PnL</small><b id="dmPl">—</b></div>
- <div class="dm-c"><small>PnL posisi terbuka</small><b id="dmFl">—</b></div>
+<div class="dm-grid">
+ <div class="dm-col">
+  <div class="dm-sum">
+   <div class="dm-c"><small>Ekuitas (live)</small><b id="dmEq">—</b></div>
+   <div class="dm-c"><small>Saldo tunai</small><b id="dmCash">—</b></div>
+   <div class="dm-c"><small>Total PnL</small><b id="dmPl">—</b></div>
+   <div class="dm-c"><small>PnL posisi terbuka</small><b id="dmFl">—</b></div>
+   <div class="dm-c"><small>PnL terealisasi</small><b id="dmRl">—</b></div>
+   <div class="dm-c"><small>Win rate</small><b id="dmWr">—</b></div>
+  </div>
+  <div><div class="dm-hd"><h3 class="dm-h3">Posisi terbuka</h3><small id="dmNp"></small></div><div class="dm-list" id="dmPos"></div></div>
+ </div>
+ <div class="dm-col r1">
+  <div class="dm-card"><div class="dm-hd"><h3 class="dm-h3">Grafik ekuitas</h3><small id="dmEqN"></small></div><div class="dm-eqc" id="dmEqc"></div></div>
+  <div class="dm-card"><div class="dm-hd"><h3 class="dm-h3">Riwayat</h3></div><div class="dm-hist" id="dmHist"></div>
+   <div class="dm-tools"><select id="dmStart" aria-label="Saldo awal"><option value="10000000">Rp 10 juta</option><option value="50000000">Rp 50 juta</option><option value="100000000">Rp 100 juta</option><option value="1000000000">Rp 1 miliar</option></select><button class="dm-b s" id="dmReset" type="button">Reset akun</button></div></div>
+ </div>
 </div>
-<p class="dm-wr" id="dmWr"></p>
-<h3 class="dm-h3">Posisi terbuka</h3><div class="dm-p" id="dmPos"></div>
-<div class="dm-top" style="justify-content:space-between;margin-bottom:10px"><h3 class="dm-h3" style="margin:0">Riwayat</h3>
- <div class="dm-top"><select id="dmStart" aria-label="Saldo awal"><option value="10000000">Rp 10 juta</option><option value="50000000">Rp 50 juta</option><option value="100000000">Rp 100 juta</option><option value="1000000000">Rp 1 miliar</option></select><button class="dm-b s" id="dmReset" type="button">Reset akun</button></div></div>
-<div class="dm-p dm-tw" id="dmHist"></div>
-<p class="scr-note" style="color:var(--muted);font-size:.8rem;line-height:1.6;margin-top:8px"><b>Catatan.</b> Akun simulasi dengan uang virtual, bukan transaksi sungguhan dan bukan saran investasi. Entry/SL/TP1/TP2 otomatis diambil dari kartu screener. <b>Kena TP1, TP2, atau SL, posisi langsung ditutup penuh dan trading selesai.</b> Tanpa fee dan tanpa slippage: entry dan keluar di harga live, jadi PnL mulai dari nol. Di dunia nyata ada fee, spread, dan slippage (terutama token DEX), jadi hasil nyata akan lebih kecil. SHORT hanya untuk koin Binance (simulasi tanpa leverage dan tanpa funding). <b>TP/SL hanya berjalan selama halaman ini terbuka.</b> Saldo tersimpan di browser ini saja. Token baru sangat berisiko; di dunia nyata bisa jatuh drastis atau tidak bisa dijual.</p>
+<p class="dm-note"><b>Catatan.</b> Akun simulasi dengan uang virtual, bukan transaksi sungguhan dan bukan saran investasi. Entry/SL/TP1/TP2 otomatis diambil dari kartu screener. <b>Kena TP1, TP2, atau SL, posisi langsung ditutup penuh dan trading selesai.</b> Tanpa fee dan tanpa slippage: entry dan keluar di harga live, jadi PnL mulai dari nol. Di dunia nyata ada fee, spread, dan slippage (terutama token DEX), jadi hasil nyata akan lebih kecil. SHORT hanya untuk koin Binance (simulasi tanpa leverage dan tanpa funding). <b>TP/SL hanya berjalan selama halaman ini terbuka.</b> Saldo tersimpan di browser ini saja. Token baru sangat berisiko; di dunia nyata bisa jatuh drastis atau tidak bisa dijual.</p>
 </div>`;
 document.body.append(root);
 
 /* modal Entry via Demo: user cukup isi nominal, SL/TP otomatis dari screener */
 const em=document.createElement('div');em.className='dm-ov';em.hidden=true;
 em.innerHTML=`<div class="dm-md" role="dialog" aria-modal="true" aria-label="Entry via Demo">
-<div class="dm-top" style="justify-content:space-between"><b id="deT" class="dm-ttl" style="font-size:1.05rem"></b><button class="scr-x" id="deX" type="button" aria-label="Tutup" style="width:40px;height:40px;font-size:1.4rem">&times;</button></div>
+<div class="dm-top" style="justify-content:space-between"><b id="deT" class="dm-ttl" style="font-size:1.08rem"></b><button class="scr-x" id="deX" type="button" aria-label="Tutup" style="width:40px;height:40px;font-size:1.4rem">&times;</button></div>
 <div class="dm-px"><b id="deP">—</b><span class="dm-meta" id="deU"></span><span class="dm-bdg" id="deB"></span></div>
 <p class="dm-lock">🔒 Entry, SL, TP1 &amp; TP2 otomatis dari hasil screener</p>
-<div class="dm-tw"><table class="dm-t" id="deL"></table></div>
-<p class="dm-meta" style="margin:14px 0 6px">Modal yang dipakai (Rp) · saldo tunai <span id="deC"></span></p>
+<div class="dm-lvg" id="deL"></div>
+<p class="dm-meta" style="margin:16px 0 8px">Modal yang dipakai (Rp) · saldo tunai <span id="deC"></span></p>
 <input class="dm-in" id="deA" inputmode="numeric" placeholder="mis. 1.000.000" autocomplete="off">
 <div class="dm-q"><button class="dm-b s" type="button" data-p=".1">10%</button><button class="dm-b s" type="button" data-p=".25">25%</button><button class="dm-b s" type="button" data-p=".5">50%</button><button class="dm-b s" type="button" data-p="1">100%</button></div>
 <p class="dm-est" id="deE"></p><button class="dm-buy dm-b" id="deGo" type="button">Entry</button></div>`;
@@ -316,13 +402,13 @@ let tzT=0;function say(m,c){tz.textContent=m;tz.className='dm-toast on '+(c||'')
 
 const amtVal=()=>+(E.deA.value.replace(/\D/g,''))||0;
 const setAmt=n=>{E.deA.value=n>0?nf(n,{maximumFractionDigits:0}):''};
-const lvRow=(l,v,u)=>`<tr><td>${l}</td><td><b>${usd(v)}</b></td><td class="${u==null?'':u>=0?'dm-up':'dm-dn'}">${u==null?'':sg(u)}</td></tr>`;
+const lvTile=(l,v,u,c)=>`<div class="${c||''}"><small>${l}</small><b>${usd(v)}</b><i class="${u==null?'':u>=0?'dm-up':'dm-dn'}">${u==null?'&nbsp;':sg(u)+' vs live'}</i></div>`;
 function paintEntry(){
   const a=cur;if(!a)return;const id=a.id,p=P[id],L=a.side==='L',u=p&&p.u,ok=p&&!stale(id);
   E.deP.textContent=u?usd(u):'—';E.deU.textContent=u&&fx?'Rp '+nf(u*fx,{maximumSignificantDigits:6}):'';
   E.deB.textContent=ok?'● LIVE '+(p.src==='pump'?'pump.fun':p.src==='dex'?'DEX':'Binance'):'○ MENUNGGU';E.deB.className='dm-bdg '+(ok?'dm-up':'');
   const d=v=>u?(v-u)/u*100:null,sd=L?1:-1;
-  E.deL.innerHTML=`<tr><th>Level screener</th><th>Harga</th><th>vs live</th></tr>`+lvRow('Entry (screener)',a.e,d(a.e))+lvRow('Stop Loss (selesai)',a.sl,d(a.sl))+lvRow('TP1 (selesai)',a.t1,d(a.t1))+lvRow('TP2 (selesai)',a.t2,d(a.t2));
+  E.deL.innerHTML=lvTile('Entry (screener)',a.e,d(a.e))+lvTile('Stop Loss (selesai)',a.sl,d(a.sl),'s')+lvTile('TP1 (selesai)',a.t1,d(a.t1),'t')+lvTile('TP2 (selesai)',a.t2,d(a.t2),'t');
   E.deC.textContent=rp(A.cash);
   const amt=amtVal();let t='',er=0;
   const le=ok?lvlErr(a):'';
@@ -339,7 +425,7 @@ function paintEntry(){
 function chartSvg(q){
   const h=H[q.id],cs=h?h.m.slice(-48):[];
   if(cs.length<3)return '<p class="dm-nd" style="margin:0">Mengumpulkan data chart…</p>';
-  const W=320,HH=80,R=46,n=cs.length,cw=(W-R)/n,bw=Math.max(1,cw*.62),lv=[q.eu,q.sl,q.t1,q.t2];
+  const W=320,HH=90,R=46,n=cs.length,cw=(W-R)/n,bw=Math.max(1,cw*.62),lv=[q.eu,q.sl,q.t1,q.t2];
   let mn=Math.min(...cs.map(x=>x.l),...lv),mx=Math.max(...cs.map(x=>x.h),...lv);const pd=(mx-mn)*.05||mx*.001;mn-=pd;mx+=pd;
   const Y=v=>HH-(v-mn)/(mx-mn)*HH,f=v=>Y(v).toFixed(1);
   const zone=(a,b,fl)=>`<rect x="0" width="${W-R}" y="${Math.min(Y(a),Y(b)).toFixed(1)}" height="${Math.abs(Y(a)-Y(b)).toFixed(1)}" fill="${fl}"/>`;
@@ -361,23 +447,29 @@ function flash(el,up){el.classList.remove('dm-fu','dm-fd');void el.offsetWidth;e
 const setT=(el,t)=>{if(el.textContent!==t)el.textContent=t};
 const colCls=v=>v>=0?'dm-up':'dm-dn';
 function setNum(el,t,v){setT(el,t);el.classList.remove('dm-up','dm-dn');if(v!=null)el.classList.add(colCls(v))}
-const posHtml=q=>`<div class="dm-pos" data-id="${esc(q.id)}"><div class="dm-ph">${iconHtml(q)}<div class="sc-n"><b>${esc(q.sym)}</b><span class="dm-sd ${q.side}">${q.side==='L'?'LONG':'SHORT'}</span><small><span class="pq"></span> · modal <span class="pc"></span> · nilai <span class="pv"></span></small></div><div class="dm-r"><b class="pl">—</b><small class="pp"></small></div></div>
-    ${pgHtml(q)}
-    <div class="dm-lv"><span>Entry <b>${usd(q.eu)}</b></span><span>Live <b class="lpx">—</b></span><span>SL <b>${usd(q.sl)}</b></span><span>TP1 <b>${usd(q.t1)}</b></span><span>TP2 <b>${usd(q.t2)}</b></span></div>
-    <div class="dm-pcc"></div>
-    <div class="dm-pa"><button class="dm-b s" type="button" data-cl=".5">Tutup 50%</button><button class="dm-b s dm-sell" type="button" data-cl="1">Tutup semua</button></div></div>`;
+const posHtml=q=>`<article class="dm-pos ${q.side}" data-id="${esc(q.id)}">
+  <div class="dm-ph">${iconHtml(q)}<div class="dm-pn"><b>${esc(q.sym)}</b><span class="dm-sd ${q.side}">${q.side==='L'?'LONG':'SHORT'}</span><small>${q.kind==='c'?'Binance · USDT':esc(q.chain||'DEX')}</small></div><div class="dm-r"><b class="pl">—</b><small class="pp"></small></div></div>
+  ${pgHtml(q)}
+  <div class="dm-tiles"><div><small>Entry</small><b>${usd(q.eu)}</b></div><div><small>Live</small><b class="lpx">—</b></div><div class="s"><small>SL</small><b>${usd(q.sl)}</b></div><div class="t"><small>TP1</small><b>${usd(q.t1)}</b></div><div class="t"><small>TP2</small><b>${usd(q.t2)}</b></div></div>
+  <div class="dm-pcc"></div>
+  <div class="dm-mt"><span>Qty <b class="pq"></b></span><span>Modal <b class="pc"></b></span><span>Nilai <b class="pv"></b></span></div>
+  <div class="dm-pa"><button class="dm-b s" type="button" data-cl=".5">Tutup 50%</button><button class="dm-b s dm-sell" type="button" data-cl="1">Tutup semua</button></div></article>`;
 function paintAcct(){
   const eq=equity(),pl=eq-A.start,fl=floating(),np=Object.keys(A.pos).length;
   setT(E.dmEq,rp(eq));setT(E.dmCash,rp(A.cash));
   setNum(E.dmPl,rp(pl)+' ('+sg(pl/A.start*100)+')',pl);
   setNum(E.dmFl,np?sr(fl):'—',np?fl:null);
+  setNum(E.dmRl,A.n?sr(A.rl):'—',A.n?A.rl:null);
+  setT(E.dmWr,A.n?Math.round(A.w/A.n*100)+'% ('+A.w+'/'+A.n+')':'—');
   setT(E.dmRunV,rp(eq));setNum(E.dmRunP,sr(pl)+' ('+sg(pl/A.start*100)+')',pl);
+  E.dmRunP.className='dm-chip '+colCls(pl);
   if(lastEq!=null&&Math.abs(eq-lastEq)>=.5){flash(E.dmEq,eq>lastEq);flash(E.dmPl,eq>lastEq);flash(E.dmRunV,eq>lastEq)}
   lastEq=eq;
-  setT(E.dmWr,`Win rate ${A.n?Math.round(A.w/A.n*100)+'%':'—'} (${A.w}/${A.n} transaksi tutup) · PnL terealisasi ${rp(A.rl)}`);
+  setT(E.dmNp,np?np+' posisi':'');
+  E.dmEqc.innerHTML=eqSvg();setT(E.dmEqN,A.eqh.length>1?'Saldo awal '+rp(A.start):'');
   const a=Object.values(A.pos),sig=a.map(q=>[q.id,q.qty,q.sl,q.t1,q.t2,q.eu].join(':')).join('|');
   if(sig!==posSig){posSig=sig;
-    E.dmPos.innerHTML=a.length?a.map(posHtml).join(''):'<p class="dm-nd">Belum ada posisi. Buka Screener, lalu tekan <b>Entry via Demo</b> di kartu mana pun.</p>'}
+    E.dmPos.innerHTML=a.length?a.map(posHtml).join(''):'<div class="dm-empty">Belum ada posisi.<br>Buka <b>Screener</b>, lalu tekan <b>Entry via Demo</b> di kartu mana pun.</div>'}
   E.dmPos.querySelectorAll('.dm-pos').forEach(el=>{const q=A.pos[el.dataset.id];if(!q)return;
     const v=net(q,q.qty,1),l=v==null?null:v-q.cost,p=l==null?null:l/q.cost*100,lp=P[q.id]&&P[q.id].u,old=P[q.id]&&stale(q.id);
     setT(el.querySelector('.pq'),nf(q.qty,{maximumSignificantDigits:6}));setT(el.querySelector('.pc'),rp(q.cost));setT(el.querySelector('.pv'),v==null?'—':rp(v));
@@ -392,7 +484,8 @@ function paintAcct(){
   const hs=A.hist.length+':'+(A.hist[0]?A.hist[0].t:0);
   if(hs!==histSig){histSig=hs;
     const d=t=>new Date(t).toLocaleString('id-ID',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
-    E.dmHist.innerHTML=A.hist.length?`<table class="dm-t"><tr><th>Waktu</th><th>Aksi</th><th>Aset</th><th>Nilai</th><th>Harga</th><th>PnL</th><th>Saldo tunai</th><th>Ket.</th></tr>${A.hist.slice(0,40).map(h=>`<tr><td>${d(h.t)}</td><td>${esc(h.s)}</td><td>${esc(h.sym)}</td><td>${rp(h.v)}</td><td>${usd(h.p)}</td><td class="${h.pnl>=0?'dm-up':'dm-dn'}">${h.s==='JUAL'||h.s==='COVER'?rp(h.pnl):'—'}</td><td>${h.bal==null?'—':rp(h.bal)}</td><td>${esc(h.w)}</td></tr>`).join('')}</table>`:'<p class="dm-nd">Belum ada transaksi.</p>'}
+    E.dmHist.innerHTML=A.hist.length?A.hist.slice(0,40).map(h=>{const cl=h.s==='JUAL'||h.s==='COVER',s=h.s==='LONG'?'L':h.s==='SHORT'?'S':'';
+      return `<div class="dm-hr2"><div><b><span class="dm-tag ${s}">${esc(h.s)}</span>${esc(h.sym)}</b><small>${d(h.t)} · ${esc(h.w)} · ${usd(h.p)}</small></div><div class="r"><b class="${cl?colCls(h.pnl):''}">${cl?sr(h.pnl):rp(h.v)}</b><small>${cl?'nilai '+rp(h.v):'modal'}</small></div></div>`}).join(''):'<p class="dm-nd">Belum ada transaksi.</p>'}
   E.dmSt.innerHTML=`<span><i class="${st.bn?'on':''}"></i>Binance WS</span><span><i class="${st.pump?'on':''}"></i>PumpPortal WS</span><span><i class="${st.dex?'on':''}"></i>DexScreener</span><span>Kurs USDT/IDR ${fx?'Rp '+nf(fx,{maximumFractionDigits:0}):'…'}</span>`}
 
 /* tombol "Akun Demo" di bar screener: selalu menampilkan ekuitas & PnL live */
@@ -402,13 +495,13 @@ function badge(){if(!bt)return;const n=Object.keys(A.pos).length,eq=equity(),pl=
   if(bt.textContent!==t)bt.textContent=t;
   bt.style.color=n?(pl>=0?'#2ee59d':'#ff5c6c'):''}
 let tm=0;
-function go(){if(isOpen)paintAcct();if(entryOpen)paintEntry();badge()}
+function go(){rec();if(isOpen)paintAcct();if(entryOpen)paintEntry();badge()}
 function sched(f){if(f){clearTimeout(tm);tm=0;go();return}if(tm)return;tm=setTimeout(()=>{tm=0;go()},250)}
 
 /* ---------- buka/tutup panel & modal ---------- */
 let prevOv='';
 function openP(){isOpen=true;root.hidden=false;prevOv=document.body.style.overflow;document.body.style.overflow='hidden';posSig='';histSig='';lastEq=null;start();sync();go()}
-function closeP(){isOpen=false;root.hidden=true;document.body.style.overflow=prevOv;idle()}
+function closeP(){isOpen=false;root.hidden=true;document.body.style.overflow=prevOv;save();idle()}
 function openEntry(a){
   cur=a;entryOpen=true;E.deA.value='';
   E.deT.innerHTML=`${iconHtml(a)}<span>${a.side==='L'?'LONG':'SHORT'} ${esc(a.sym)}${a.kind==='c'?'/USDT':''}</span>`;
@@ -432,8 +525,8 @@ document.addEventListener('click',e=>{
   const b=e.target.closest&&e.target.closest('.dm-go');if(!b)return;e.preventDefault();const d=b.dataset,n=k=>parseFloat(d[k]);
   const a={kind:d.dm,sym:String(d.sym||'').slice(0,24),side:d.dir==='SHORT'?'S':'L',e:n('e'),sl:n('sl'),t1:n('t1'),t2:n('t2')};
   a.name=a.sym;
-  const card=b.closest('article,.cw'),im=card&&card.querySelector('.av img');
-  a.img=im&&/^https:\/\//.test(im.src)?im.src:'';
+  const card=b.closest('article,.cw'),im=card&&card.querySelector('.av img.ok, .av img');
+  a.img=im&&/^https:\/\//.test(im.currentSrc||im.src)?(im.currentSrc||im.src):'';
   if(a.kind==='c'){if(!CX.test(a.sym))return;a.id='c:'+a.sym}
   else if(a.kind==='d'){a.chain=d.chain;if(!CH.has(a.chain)||!okAddr(a.chain,d.tok||''))return;a.addr=key(a.chain,d.tok);a.id='d:'+a.addr}
   else return;
@@ -445,6 +538,7 @@ document.addEventListener('click',e=>{
 const ref=document.getElementById('scrRef');
 if(ref){bt=document.createElement('button');bt.type='button';bt.id='dmOpen';ref.after(bt);bt.onclick=openP;badge()}
 if(Object.keys(A.pos).length)start();   /* posisi terbuka: TP/SL tetap dipantau selama halaman terbuka */
+addEventListener('pagehide',save);
 window.WDDemo={open:openP,close:closeP};
 if(window.WD_DEMO_TEST)window.WDDemo._t={openPos,closePos,tick,A:()=>A,setFx:v=>{fx=v;fxAt=Date.now()},setSol:v=>{solUsd=v},calcOpen,net,equity,openEntry:a=>{cur=a},P};
 })();
