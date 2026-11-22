@@ -5,6 +5,12 @@
 <!-- Anti-zoom + aman untuk notch/poni -->
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#000000">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="WilkDez">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>WilkDez | Developer Studio</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -311,9 +317,12 @@ h1 span{display:block;background:linear-gradient(180deg,#fff 0,#8d8d8d 100%);-we
 .st-msg{position:absolute;inset:0;display:none;align-items:center;justify-content:center;text-align:center;padding:16px;color:var(--muted);font-size:.9rem;pointer-events:none}
 .btc-chart.empty .st-msg{display:flex}
 .btc-chart.empty svg{display:none}
+.pwa{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:300;height:46px;padding:0 20px;border-radius:999px;background:#fff;color:#000;font-weight:500;font-size:.9rem;box-shadow:0 8px 30px rgba(0,0,0,.5)}
+.pwa[hidden]{display:none}
 </style>
 </head>
 <body>
+<button type="button" class="pwa" id="pwaBtn" hidden>Install App</button>
 <!-- ikon tombol -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
   <symbol id="i-btc" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.5 7.5h3.7a2.2 2.2 0 010 4.4H9.5h4.2a2.3 2.3 0 010 4.6H9.5M9.5 7.5v9M11.2 6v1.5M11.2 16.5V18M13.6 6v1.5M13.6 16.5V18"/></g></symbol>
@@ -1062,8 +1071,8 @@ const BN=['https://data-api.binance.vision/api/v3/','https://api.binance.com/api
 const WSH=['wss://stream.binance.com:9443/stream?streams=','wss://data-stream.binance.vision/stream?streams='];
 const HT={'1m':'15m','5m':'1h','15m':'1h','1h':'4h','4h':'1d'}, HL={'15m':'15m','1h':'1j','4h':'4j','1d':'1H'};
 let tf='15m',flt='all',md='set',res=[],okN=0,isOpen=false,tk=0,timer=null,ws=null,wsOn=false,wsHost=0,wsDelay=1000,hostI=0,raf=0,rd=0,at='';
-let store={},fund={},fxs={},fr={},frAt=0,fng=null,fngAt=0,q='',COINS=[],LIST=[],an={},lim=60,subd=new Set(),dl=0;
-try{const c=JSON.parse(localStorage.getItem('wd_fund2')||'null');if(c){fund=c.f||{};fxs=c.x||{}}}catch(e){}
+let store={},fund={},fxs={},fundAllAt=0,lastScan=0,fr={},frAt=0,fng=null,fngAt=0,q='',COINS=[],LIST=[],an={},lim=60,subd=new Set(),dl=0;
+try{const c=JSON.parse(localStorage.getItem('wd_fund2')||'null');if(c){fund=c.f||{};fxs=c.x||{};fundAllAt=c.a||0}}catch(e){}
 const T={},px={},dirty=new Set(),hc={};
 const M=()=>md;
 const vis=()=>{$('scrQ').style.display=md==='all'?'':'none';$('scrFl').style.display=md==='all'?'none':''};
@@ -1077,17 +1086,29 @@ async function kl(s,t,lim=150){
   return null;
 }
 
-/* ---- sumber fundamental: CoinGecko per simbol (cache 10 menit) ---- */
+/* ---- sumber fundamental: CoinGecko (cache 10 menit) ---- */
+const CGM='https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&sparkline=false&price_change_percentage=7d,30d,200d,1y';
+const fo=x=>({rank:x.market_cap_rank,mc:x.market_cap,fdv:x.fully_diluted_valuation,vol:x.total_volume,ath:x.ath_change_percentage,img:x.image,
+  d7:x.price_change_percentage_7d_in_currency,d30:x.price_change_percentage_30d_in_currency,d200:x.price_change_percentage_200d_in_currency});
+const saveF=()=>{try{localStorage.setItem('wd_fund2',JSON.stringify({f:fund,x:fxs,a:fundAllAt}))}catch(e){}};
+/* satu koin (tab Cari & Analisa) */
 async function loadFund(list){
   const now=Date.now(),need=list.filter(s=>!(fxs[s]&&now-fxs[s]<6e5));
   if(!need.length)return;
   try{
-    const j=await getJ(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&symbols=${need.map(s=>s.toLowerCase()).join(',')}&per_page=250&sparkline=false&price_change_percentage=7d,30d,200d,1y`,12000);
-    j.forEach(x=>{const s=String(x.symbol).toUpperCase();if(fxs[s]===now||!need.includes(s))return;   /* urutan market cap: yang pertama = koin terbesar */
-      fund[s]={rank:x.market_cap_rank,mc:x.market_cap,fdv:x.fully_diluted_valuation,vol:x.total_volume,ath:x.ath_change_percentage,img:x.image,
-        d7:x.price_change_percentage_7d_in_currency,d30:x.price_change_percentage_30d_in_currency,d200:x.price_change_percentage_200d_in_currency};fxs[s]=now});
-    try{localStorage.setItem('wd_fund2',JSON.stringify({f:fund,x:fxs}))}catch(e){}
+    const j=await getJ(`${CGM}&symbols=${need.map(s=>s.toLowerCase()).join(',')}&per_page=250`,12000);
+    j.forEach(x=>{const s=String(x.symbol).toUpperCase();if(fxs[s]===now||!need.includes(s))return;fund[s]=fo(x);fxs[s]=now});saveF();
   }catch(e){}
+}
+/* semua koin untuk scan: CoinGecko top 1000 (4 halaman), dicocokkan ke koin Binance lewat kode; urutan market cap = yang terbesar menang */
+async function loadFundAll(set){
+  const now=Date.now();if(now-fundAllAt<6e5)return;
+  const seen=new Set();
+  for(let pg=1;pg<=4;pg++){
+    try{const j=await getJ(`${CGM}&order=market_cap_desc&per_page=250&page=${pg}`,15000);
+      j.forEach(x=>{const s=String(x.symbol).toUpperCase();if(seen.has(s))return;seen.add(s);if(set.has(s)){fund[s]=fo(x);fxs[s]=now}});
+      if(j.length<250)break}catch(e){break}}
+  if(seen.size){fundAllAt=now;saveF()}
 }
 async function loadFr(){
   if(Date.now()-frAt<12e4)return;
@@ -1237,7 +1258,7 @@ const card=c=>{const p=px[c.s]||c.last,st=stat(c,p),tg=c.tags.map(t=>[t,'']).con
 const clock=()=>new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
 const fillDl=()=>{if(!dl&&LIST.length){dl=1;$('scrDl').innerHTML=LIST.map(x=>`<option value="${x.s}">`).join('')}};
 const getC=s=>M()==='all'?(an[s]&&an[s].c):(res&&res.find(x=>x.s===s));
-const want=()=>M()==='set'?COINS:Object.keys(an).filter(s=>an[s].c);
+const want=()=>M()==='set'?(res||[]).map(c=>c.s):Object.keys(an).filter(s=>an[s].c);
 
 /* penjelasan setup dalam bahasa biasa */
 const explain=c=>`<span class="dir ${c.dir}">${c.dir}</span><b>Kenapa:</b> ${c.tags.join(', ')}${c.ftags.length?' · fundamental: '+c.ftags.join(', '):''}. <b>Entry</b> ${fp(c.entry)} (close candle terakhir). <b>SL</b> ${fp(c.sl)} (${pc(c.sl,c.entry)}) ${c.dir==='LONG'?'di bawah':'di atas'} swing 8 candle terakhir, minimal 1 ATR. <b>TP1</b> ${fp(c.tp1)} (1.5R) dan <b>TP2</b> ${fp(c.tp2)} (2.5R). Masuk saat status <b>Zona entry</b>; bila harga sudah jauh dari entry, tunggu pullback. Hanya acuan hitungan, bukan saran investasi.`;
@@ -1302,26 +1323,31 @@ async function runAll(force){
   Object.keys(an).forEach(s=>{if(!an[s].busy)analyzeCoin(s,1)});   /* analisa ulang otomatis */
 }
 
-/* ---- mode Setup: scan otomatis 60 koin volume terbesar ---- */
+/* ---- tab Screener: scan SEMUA koin Binance yang likuid (volume 24j >= $1 jt), hanya yang kena screener ditampilkan ---- */
+async function pool(a,fn,n=12){let i=0;await Promise.all(Array.from({length:Math.min(n,a.length)},async()=>{while(i<a.length){const x=a[i++];await fn(x)}}))}
 async function run(force){
   if(M()==='all')return runAll(force);
   const id=++tk,t=tf;
   if(!res||!res.length)$('scrMeta').textContent='Memuat daftar koin…';
   const l=await coinList();if(id!==tk||!isOpen)return;
-  LIST=l;fillDl();COINS=l.length?l.slice(0,60).map(x=>x.s):DEF;
-  if(!res||!res.length)$('scrMeta').textContent=`Menganalisis ${COINS.length} koin…`;
-  const [all]=await Promise.all([Promise.all(COINS.map(c=>kl(c,t).then(cs=>({c,cs})))),loadFund(COINS),loadFr(),loadFng()]);
+  LIST=l;fillDl();COINS=l.length?l.filter(x=>x.q>=1e6).map(x=>x.s).slice(0,500):DEF;
+  let n=0;const tot=COINS.length,tick=()=>{if(id===tk&&(!res||!res.length))$('scrMeta').textContent=`Menganalisis ${++n} / ${tot} koin…`};
+  const fa=Promise.all([loadFundAll(new Set(COINS)),loadFr(),loadFng()]);
+  const ok=[];
+  await pool(COINS,async c=>{const cs=await kl(c,t);tick();if(cs&&cs.length>60)ok.push({c,cs})});
   if(id!==tk||!isOpen)return;
-  const ok=all.filter(x=>x.cs&&x.cs.length>60);okN=ok.length;
-  if(!ok.length){res=null;render();return}
-  await Promise.all(ok.map(x=>htf(x.c,t).then(h=>{x.h=h})));
+  okN=ok.length;if(!ok.length){res=null;render();return}
+  await fa;if(id!==tk||!isOpen)return;
+  /* tahap 1: tanpa tren TF besar; hanya kandidat yang butuh cek TF besar (hemat request) */
+  const cand=ok.filter(x=>{const a=analyze(x.c,x.cs,0,'',1);return a&&(!a.none||a.sc>=4)});
+  await pool(cand,async x=>{x.h=await htf(x.c,t)},10);
   if(id!==tk||!isOpen)return;
   ok.forEach(x=>{store[x.c]=x.cs;if(!wsOn||!px[x.c])px[x.c]=x.cs[x.cs.length-1].c});
-  res=ok.map(x=>{const a=analyze(x.c,x.cs,x.h);if(!a)return null;
+  res=cand.map(x=>{const a=analyze(x.c,x.cs,x.h);if(!a)return null;
       const f=fscore(x.c,a.dir);a.fs=f?f.score:null;a.ftags=f?f.tags:[];
       a.total=f?+(.65*a.tech+.35*f.score).toFixed(1):+a.tech.toFixed(1);return a})
-    .filter(c=>c&&c.total>=5.5).sort((a,b)=>b.total-a.total||b.vr-a.vr);
-  at=clock();
+    .filter(c=>c&&c.total>=5.5).sort((a,b)=>b.total-a.total||b.vr-a.vr).slice(0,80);
+  at=clock();lastScan=Date.now();
   render();wsSync();
 }
 
@@ -1367,7 +1393,7 @@ function openScr(){
   if(window.setMenu)setMenu(false);
   ov.hidden=false;document.body.style.overflow='hidden';
   $('scrX').focus({preventScroll:true});
-  vis();run();timer=setInterval(()=>{if(!document.hidden)run()},60000);
+  vis();run();timer=setInterval(()=>{if(document.hidden)return;if(M()==='set'&&Date.now()-lastScan<115e3)return;run()},60000);
 }
 function closeScr(){
   if(!isOpen)return;isOpen=false;ov.hidden=true;
@@ -1867,6 +1893,16 @@ function applyQ(){
 }
 qi.addEventListener('input',()=>{clearTimeout(qt);qt=setTimeout(applyQ,500)});
 qi.addEventListener('keydown',e=>{if(e.key==='Enter'){clearTimeout(qt);applyQ();qi.blur()}});
+})();
+</script>
+<script>
+/* ===== PWA: service worker + tombol Install App ===== */
+(()=>{
+if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+const b=document.getElementById('pwaBtn');let ev=null;
+addEventListener('beforeinstallprompt',e=>{e.preventDefault();ev=e;if(!matchMedia('(display-mode: standalone)').matches)b.hidden=false});
+b.onclick=async()=>{if(!ev)return;b.hidden=true;ev.prompt();try{await ev.userChoice}catch(_){}ev=null};
+addEventListener('appinstalled',()=>{b.hidden=true;ev=null});
 })();
 </script>
 </body>
