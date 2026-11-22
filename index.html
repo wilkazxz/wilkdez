@@ -244,6 +244,8 @@ h1 span{display:block;background:linear-gradient(180deg,#fff 0,#8d8d8d 100%);-we
 .an:disabled{opacity:.5;cursor:wait}
 .cw .res{display:flex;flex-direction:column;gap:12px}.cw .res:empty{display:none}
 .cw .res .sc{border:0;padding:0;background:none}.cw .res .sc-h{display:none}
+.tags a,.tags button{padding:3px 9px;border-radius:999px;border:1px solid var(--line);color:#fff;font-size:.74rem;text-decoration:none}
+.tags .rk{color:#ff5c6c;border-color:rgba(255,92,108,.5)}
 .ex{font-size:.84rem;line-height:1.6;color:var(--muted)}.ex b{color:#fff;font-weight:500}.ex .dir{margin-right:6px}
 @media (max-width:700px){.btc-ctl .btn{flex:1 1 100%}.fc{grid-template-columns:repeat(3,1fr)}}
 
@@ -721,6 +723,17 @@ onSnapshot(query(collection(db,'projects'),orderBy('created','desc')),s=>{projec
       <div class="seg" id="scrMd" role="group" aria-label="Tampilan">
         <button type="button" data-v="set" aria-pressed="true">Screener</button>
         <button type="button" data-v="all" aria-pressed="false">Cari &amp; Analisa</button>
+        <button type="button" data-v="snp" aria-pressed="false">Sniper</button>
+      </div>
+      <div class="seg" id="scrCh" role="group" aria-label="Chain" style="display:none">
+        <button type="button" data-v="sol-pump" aria-pressed="true">SOL · Pump.fun</button>
+        <button type="button" data-v="sol" aria-pressed="false">SOL · Semua</button>
+        <button type="button" data-v="base" aria-pressed="false">Base</button>
+        <button type="button" data-v="bsc" aria-pressed="false">BSC</button>
+      </div>
+      <div class="seg" id="scrSn" role="group" aria-label="Filter sniper" style="display:none">
+        <button type="button" data-v="all" aria-pressed="true">Semua</button>
+        <button type="button" data-v="ok" aria-pressed="false">Layak</button>
       </div>
       <div class="seg" id="scrFl" role="group" aria-label="Arah">
         <button type="button" data-v="all" aria-pressed="true">Semua</button>
@@ -731,6 +744,7 @@ onSnapshot(query(collection(db,'projects'),orderBy('created','desc')),s=>{projec
       <datalist id="scrDl"></datalist>
     </div>
     <div class="scr-meta"><span id="scrMeta">Menganalisis…</span><span class="fng" id="scrFng" hidden></span><button type="button" id="scrRef">Refresh</button></div>
+    <p class="scr-note" id="snNote" hidden style="margin:0 0 16px"><b>Sniper pool baru.</b> Memantau pool baru di DEX (data GeckoTerminal + DexScreener). Skor memakai likuiditas, tekanan beli/jual, volume, momentum, dan umur token, bukan candle. Token baru sangat berisiko (rug pull, honeypot, likuiditas ditarik); <b>LAYAK bukan berarti aman</b>. Cek kontrak, holder, dan likuiditas terkunci sendiri. Entry/SL/TP hanya acuan hitungan, bukan saran investasi.</p>
     <div class="scr-grid" id="scrGrid"></div>
     <p class="scr-note"><b>Cara kerja.</b> Skor Total = 65% Teknikal + 35% Fundamental. <b>Teknikal</b> (candle yang sudah close): EMA 20/50, RSI 14, MACD 12/26/9, ATR 14, volume, breakout/pullback, dan konfirmasi tren timeframe yang lebih besar. <b>Fundamental</b> (data terukur): peringkat &amp; market cap, likuiditas (volume/market cap), risiko dilusi (FDV/market cap), tren 7/30/200 hari, jarak dari ATH, funding rate futures, dan indeks Fear &amp; Greed. Fundamental di sini <b>tidak mencakup</b> berita, aktivitas on-chain, atau jadwal token unlock. Mode <b>Semua Koin</b> menampilkan seluruh pasangan USDT di Binance dengan harga live; tekan <b>Analisa</b> pada koin mana pun untuk cek zona Entry/TP/SL beserta penjelasannya. Semua angka diambil langsung dari Binance, CoinGecko, Binance Futures, dan alternative.me; bila sebuah sumber gagal dimuat, bagian itu ditampilkan kosong, bukan diisi data pengganti. Level Entry, TP, dan SL hanya acuan hitungan, bukan saran investasi atau rekomendasi beli/jual, dan tidak ada jaminan profit. Tentukan sendiri ukuran posisi dan risikomu (DYOR).</p>
   </div>
@@ -1075,7 +1089,7 @@ let store={},fund={},fxs={},fundAllAt=0,lastScan=0,fr={},frAt=0,fng=null,fngAt=0
 try{const c=JSON.parse(localStorage.getItem('wd_fund2')||'null');if(c){fund=c.f||{};fxs=c.x||{};fundAllAt=c.a||0}}catch(e){}
 const T={},px={},dirty=new Set(),hc={};
 const M=()=>md;
-const vis=()=>{$('scrQ').style.display=md==='all'?'':'none';$('scrFl').style.display=md==='all'?'none':''};
+const vis=()=>{const m=md,sn=m==='snp';$('scrQ').style.display=m==='all'?'':'none';$('scrFl').style.display=m==='set'?'':'none';$('scrTf').style.display=sn?'none':'';$('scrCh').style.display=sn?'':'none';$('scrSn').style.display=sn?'':'none';$('snNote').hidden=!sn};
 
 const getJ=async(u,ms=9000)=>{const c=new AbortController(),t=setTimeout(()=>c.abort(),ms);
   try{const r=await fetch(u,{signal:c.signal});if(!r.ok)throw new Error(r.status);return await r.json()}finally{clearTimeout(t)}};
@@ -1306,6 +1320,7 @@ function render(){
   const meta=$('scrMeta'),fg=$('scrFng');
   if(fng){fg.hidden=false;fg.className='fng '+(fng.v<=40?'f':fng.v>=60?'g':'n');fg.textContent='Fear & Greed '+fng.v+' · '+fng.t}else fg.hidden=true;
   vis();
+  if(M()==='snp')return renderSn(1);
   if(M()==='all')return renderAll();
   if(res===null){meta.textContent='Gagal memuat data.';grid.innerHTML='<div class="scr-empty">Data pasar belum bisa dimuat.<br><button type="button" class="retry">Coba lagi</button></div>';return}
   const list=res.filter(c=>flt==='all'||c.dir===flt);
@@ -1326,6 +1341,7 @@ async function runAll(force){
 /* ---- tab Screener: scan SEMUA koin Binance yang likuid (volume 24j >= $1 jt), hanya yang kena screener ditampilkan ---- */
 async function pool(a,fn,n=12){let i=0;await Promise.all(Array.from({length:Math.min(n,a.length)},async()=>{while(i<a.length){const x=a[i++];await fn(x)}}))}
 async function run(force){
+  if(M()==='snp')return runSn();
   if(M()==='all')return runAll(force);
   const id=++tk,t=tf;
   if(!res||!res.length)$('scrMeta').textContent='Memuat daftar koin…';
@@ -1393,12 +1409,12 @@ function openScr(){
   if(window.setMenu)setMenu(false);
   ov.hidden=false;document.body.style.overflow='hidden';
   $('scrX').focus({preventScroll:true});
-  vis();run();timer=setInterval(()=>{if(document.hidden)return;if(M()==='set'&&Date.now()-lastScan<115e3)return;run()},60000);
+  vis();run();timer=setInterval(()=>{if(document.hidden||M()==='snp')return;if(M()==='set'&&Date.now()-lastScan<115e3)return;run()},60000);
 }
 function closeScr(){
   if(!isOpen)return;isOpen=false;ov.hidden=true;
   const m=$('market');document.body.style.overflow=(m&&!m.hidden)?'hidden':'';
-  clearInterval(timer);wsStop();tk++;
+  clearInterval(timer);wsStop();snStop();tk++;
 }
 document.querySelectorAll('[data-scr]').forEach(b=>b.addEventListener('click',openScr));
 $('scrX').onclick=closeScr;
@@ -1413,7 +1429,7 @@ grid.addEventListener('error',e=>{const im=e.target;if(im.tagName==='IMG'&&im.pa
 function seg(el,fn){el.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
   el.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));fn(b.dataset.v)})}
 const mdSync=()=>$('scrMd').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===md));
-function switchMode(){vis();res=[];grid.innerHTML='';wsStop();run()}
+function switchMode(){snStop();vis();res=[];grid.innerHTML='';wsStop();run()}
 seg($('scrTf'),v=>{tf=v;const old=Object.keys(an);an={};store={};res=[];grid.innerHTML='';wsStop();
   if(M()==='all')old.forEach(s=>{an[s]={busy:1}});
   run(1);if(M()==='all')old.forEach(s=>analyzeCoin(s))});
@@ -1432,6 +1448,78 @@ seg($('scrFl'),v=>{flt=v;if(res)render()});
 window.openScrFor=s=>{md='all';q=s;qi.value=s;lim=60;mdSync();
   if(isOpen)switchMode();else openScr();
   analyzeCoin(s)};
+
+/* ===== SNIPER: pool baru di DEX (GeckoTerminal) + harga live tiap 5 detik (DexScreener). Skor dari data pasar, bukan candle ===== */
+const NET={'sol-pump':'solana',sol:'solana',base:'base',bsc:'bsc'};
+let snC='sol-pump',snF='all',snT=0,snP=0;const snp=new Map();
+const esc=s=>String(s).replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
+const fpm=p=>p>=.01?fp(p):'$'+p.toFixed(Math.min(14,Math.ceil(-Math.log10(p||1))+3));
+const ageT=m=>m<1?'<1 mnt':m<60?Math.floor(m)+' mnt':m<1440?(m/60).toFixed(1)+' jam':Math.floor(m/1440)+' hari';
+const N=v=>+v||0;
+function gt(d){const a=d.attributes,r=d.relationships,v=a.volume_usd||{},pc=a.price_change_percentage||{},t=a.transactions||{},m5=t.m5||{},h1=t.h1||{};
+  return{a:a.address,n:String(a.name||'?').split(' / ')[0].slice(0,24),tok:String(r.base_token.data.id).replace(/^[^_]+_/,''),dex:String(r.dex.data.id),t0:Date.parse(a.pool_created_at),
+    p:N(a.base_token_price_usd),liq:N(a.reserve_in_usd),fdv:N(a.fdv_usd),v5:N(v.m5),v1:N(v.h1),c5:N(pc.m5),c1:N(pc.h1),b5:N(m5.buys),s5:N(m5.sells),b1:N(h1.buys),s1:N(h1.sells)}}
+function snScore(x){
+  const m=(Date.now()-x.t0)/6e4,n5=x.b5+x.s5,bp=n5?x.b5/n5:.5,to=x.liq>0?x.v5/x.liq:0,fl=[];let sc=0;
+  if(x.liq>=3e4)sc+=2;else if(x.liq>=1e4)sc+=1.5;else if(x.liq>=5e3)sc+=.8;else fl.push('Likuiditas tipis');
+  if(n5>=10){if(bp>=.6)sc+=2;else if(bp>=.5)sc+=1;else fl.push('Tekanan jual')}else fl.push('Transaksi sepi');
+  if(n5>=30)sc+=1.5;else if(n5>=10)sc+=.75;
+  if(to>=.5)sc+=1.5;else if(to>=.2)sc+=.75;
+  if(x.c5>0&&x.c5<=60)sc+=1.5;else if(x.c5>60)fl.push('Sudah naik tinggi (5m +'+x.c5.toFixed(0)+'%)');else if(x.c5<-10)sc-=1;
+  if(x.c1>-20&&x.c1<=300)sc+=.75;
+  if(m<2)fl.push('Sangat baru (<2 mnt)');else if(m<=120)sc+=1.5;else if(m<=360)sc+=.5;
+  const fd=x.fdv&&x.liq&&x.fdv/x.liq>60?['FDV jauh di atas likuiditas']:[];
+  const s=Math.max(0,Math.min(10,sc/10.75*10));
+  return{sc:s,fl:fl.concat(fd),ok:s>=6&&!fl.length}}
+const snView=()=>[...snp.values()].filter(x=>snC!=='sol-pump'||x.dex.startsWith('pump')).map(x=>(x.r=snScore(x),x))
+  .filter(x=>snF==='all'||x.r.ok).sort((a,b)=>b.r.sc-a.r.sc||b.t0-a.t0).slice(0,40);
+function snIn(x){
+  const r=x.r=snScore(x),m=(Date.now()-x.t0)/6e4,n5=x.b5+x.s5,bp=n5?Math.round(x.b5/n5*100):0;
+  if(r.ok&&!x.ent)x.ent=x.p;
+  let lv='';
+  if(x.ent){const e=x.ent,c={dir:'LONG',entry:e,sl:e*.8,tp1:e*1.3,tp2:e*1.5,risk:e*.2},st=stat(c,x.p);
+    lv=`<div class="lv"><div class="e"><small>Entry</small><b>${fpm(e)}</b></div><div class="s"><small>Stop Loss</small><b>${fpm(c.sl)}</b><i>-20%</i></div><div class="t"><small>TP1 (1.5R)</small><b>${fpm(c.tp1)}</b><i>+30%</i></div><div class="t"><small>TP2 (2.5R)</small><b>${fpm(c.tp2)}</b><i>+50%</i></div></div>
+    <div class="sc-l"><span>Live <b>${fpm(x.p)}</b></span><span class="lr">${st.r>=0?'+':''}${st.r.toFixed(2)}R</span><span class="st ${st.k}">${st.t}</span></div>`}
+  const ex=r.ok?`<b>Kenapa:</b> likuiditas ${cp(x.liq)}, ${bp}% dari ${n5} transaksi 5 mnt adalah beli, volume 5 mnt ${(x.v5/x.liq).toFixed(1)}x likuiditas, umur ${ageT(m)}. Entry dikunci di harga saat token lolos filter; SL -20%, TP1 +30%, TP2 +50%.`
+    :`<b>Belum ada zona entry.</b> ${r.fl.length?'Ada tanda risiko (lihat label merah di bawah), jadi belum aman untuk entry.':'Skor '+r.sc.toFixed(1)+'/10, butuh minimal 6.'}`+(x.ent?' Setup sebelumnya sudah tidak memenuhi syarat.':'');
+  const L=x.dex.startsWith('pump')?`<a href="https://pump.fun/coin/${x.tok}" target="_blank" rel="noopener">Pump.fun</a>`:'';
+  return `<div class="sc-h"><div class="av" data-l="${esc(x.n[0]||'?')}">${esc(x.n[0]||'?')}</div><div class="sc-n"><b>${esc(x.n)}</b><small>${esc(x.dex)} · umur ${ageT(m)}${m<5?' · BARU':''}</small></div><span class="dir ${r.ok?'LONG':r.fl.length?'SHORT':''}">${r.ok?'LAYAK':x.ent?'SETUP LAMA':r.fl.length?'RISIKO':'BELUM'}</span></div>
+  <div class="sbs">${bar('Skor sniper',r.sc,'tot')}</div>
+  <div class="fc"><div><small>Likuiditas</small><b>${cp(x.liq)}</b></div><div><small>FDV</small><b>${cp(x.fdv)}</b></div><div><small>Harga</small><b>${fpm(x.p)}</b></div><div><small>Vol 5m</small><b>${cp(x.v5)}</b></div></div>
+  <div class="fc"><div><small>Harga 5m</small><b>${sgn(x.c5)}</b></div><div><small>Harga 1j</small><b>${sgn(x.c1)}</b></div><div><small>Beli/Jual 5m</small><b>${x.b5}/${x.s5}</b></div><div><small>Beli/Jual 1j</small><b>${x.b1}/${x.s1}</b></div></div>
+  ${lv}<p class="ex">${ex}</p>
+  <div class="tags">${r.fl.map(f=>`<span class="rk">${esc(f)}</span>`).join('')}<a href="https://dexscreener.com/${NET[snC]}/${x.a}" target="_blank" rel="noopener">DexScreener</a>${L}<button type="button" class="cpy" data-t="${x.tok}">Salin kontrak</button></div>`}
+const snCard=x=>`<article class="cw sn" data-a="${x.a}">${snIn(x)}</article>`;
+function renderSn(full){
+  if(M()!=='snp')return;
+  const l=snView();$('scrFng').hidden=true;
+  $('scrMeta').textContent=`${snp.size} pool baru dipantau · ${l.length} tampil · diperbarui ${clock()} · harga live tiap 5 detik`;
+  if(full||!grid.querySelector('.sn')){grid.innerHTML=l.length?l.map(snCard).join(''):`<div class="scr-empty">${snp.size?'Belum ada token yang lolos filter.':'Memuat pool baru…'}</div>`;return}
+  l.forEach(x=>{const el=grid.querySelector(`.sn[data-a="${x.a}"]`);if(el)el.innerHTML=snIn(x)})}
+async function snFetch(){
+  const c=snC,got=[];
+  for(const pg of [1,2]){try{const j=await getJ(`https://api.geckoterminal.com/api/v2/networks/${NET[c]}/new_pools?page=${pg}`,10000);
+    (j.data||[]).forEach(d=>{try{const x=gt(d);if(/^[A-Za-z0-9]+$/.test(x.a)&&/^[A-Za-z0-9]+$/.test(x.tok)&&x.t0&&x.p>0)got.push(x)}catch(e){}})}catch(e){break}}
+  if(c!==snC||M()!=='snp')return;
+  if(!got.length&&!snp.size){$('scrMeta').textContent='Pool baru belum bisa dimuat (batas request GeckoTerminal?). Coba Refresh sebentar lagi.'}
+  got.forEach(x=>{const o=snp.get(x.a);if(!o||Date.now()-(o.ds||0)>3e4)snp.set(x.a,Object.assign({},o,x))});
+  for(const [k,x] of snp)if(Date.now()-x.t0>216e5)snp.delete(k);   /* buang pool > 6 jam */
+  renderSn(1)}
+async function snPoll(){
+  if(M()!=='snp'||document.hidden)return;
+  const c=snC,l=snView().slice(0,30).map(x=>x.a);if(!l.length)return;
+  try{const j=await getJ(`https://api.dexscreener.com/latest/dex/pairs/${NET[c]}/${l.join(',')}`,6000);
+    if(c!==snC)return;
+    (j.pairs||[]).forEach(q=>{const x=snp.get(q.pairAddress)||snp.get(String(q.pairAddress).toLowerCase());if(!x)return;
+      const t=q.txns||{},v=q.volume||{},pc=q.priceChange||{},t5=t.m5||{},t1=t.h1||{};
+      Object.assign(x,{p:N(q.priceUsd)||x.p,liq:N(q.liquidity&&q.liquidity.usd)||x.liq,fdv:N(q.fdv)||x.fdv,v5:N(v.m5),v1:N(v.h1),c5:N(pc.m5),c1:N(pc.h1),b5:N(t5.buys),s5:N(t5.sells),b1:N(t1.buys),s1:N(t1.sells),ds:Date.now()})});
+    renderSn(0)}catch(e){}}
+function snStop(){clearInterval(snT);clearInterval(snP);snT=snP=0}
+function runSn(){snStop();vis();renderSn(1);snFetch();snT=setInterval(snFetch,20000);snP=setInterval(snPoll,5000)}
+seg($('scrCh'),v=>{snC=v;snp.clear();grid.innerHTML='';runSn()});
+seg($('scrSn'),v=>{snF=v;renderSn(1)});
+grid.addEventListener('click',e=>{const b=e.target.closest('.cpy');if(!b)return;
+  try{navigator.clipboard.writeText(b.dataset.t);b.textContent='Tersalin ✓';setTimeout(()=>b.textContent='Salin kontrak',1500)}catch(_){}});
 
 /* dipakai bersama oleh screener saham */
 window.TA={ema,rsi,atr,analyze,candles,stat,fp,pc,sgn,cp,verdict,bar};
