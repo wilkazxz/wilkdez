@@ -453,7 +453,7 @@ h1 span{display:block;background:linear-gradient(180deg,#fff 0,#8d8d8d 100%);-we
     </div>
   </div>
   <div class="coin-bar">
-    <input class="scr-q" id="coinQ" type="search" enterkeyhint="search" placeholder="Cari koin: ETH, SOL, XRP…" autocomplete="off" autocapitalize="characters" spellcheck="false" list="coinDl" aria-label="Cari koin">
+    <input class="scr-q" id="coinQ" type="search" enterkeyhint="search" placeholder="Cari koin…" autocomplete="off" autocapitalize="characters" spellcheck="false" list="coinDl" aria-label="Cari koin">
     <datalist id="coinDl"></datalist>
     <button class="btn btn-solid btn-sm" id="coinAn" type="button">Analisa BTC</button>
   </div>
@@ -489,7 +489,7 @@ h1 span{display:block;background:linear-gradient(180deg,#fff 0,#8d8d8d 100%);-we
     <div class="cd-w"></div>
   </div>
   <div class="coin-bar">
-    <input class="scr-q" id="stQ" type="search" enterkeyhint="search" placeholder="Cari saham: ANT, AAPL, TSLA, NVDA…" autocomplete="off" autocapitalize="characters" spellcheck="false" list="stDl" aria-label="Cari saham AS">
+    <input class="scr-q" id="stQ" type="search" enterkeyhint="search" placeholder="Cari saham…" autocomplete="off" autocapitalize="characters" spellcheck="false" list="stDl" aria-label="Cari saham AS">
     <datalist id="stDl"></datalist>
   </div>
   <div class="chips" id="stChips" aria-label="Saham populer"></div>
@@ -2000,6 +2000,37 @@ b.onclick=async()=>{if(!ev)return;b.hidden=true;ev.prompt();try{await ev.userCho
 addEventListener('appinstalled',()=>{b.hidden=true;ev=null});
 })();
 </script>
+<style id="mobfix">
+/* ===== RAPI DI HP: panel Crypto, Saham AS, semua Screener, Listing Baru ===== */
+.scr{overflow-x:hidden}
+.scr-grid{grid-template-columns:repeat(auto-fill,minmax(min(100%,330px),1fr))}
+.seg{max-width:100%}
+.seg::-webkit-scrollbar{display:none}
+@media (max-width:700px){
+  .seg button{height:40px;min-width:0;padding:0 10px;font-size:.82rem;white-space:nowrap}
+  .mk-tabs.seg{max-width:none}
+  /* kepala chart: judul, lalu tombol & pilihan tersusun rapi satu kolom */
+  .btc-head{align-items:stretch;gap:14px}
+  .btc-ctl{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .btc-ctl .btn{width:100%;height:44px;padding:0 8px;font-size:.84rem;flex:none;order:-1}
+  .btc-ctl .seg{grid-column:1/-1;width:100%;display:flex}
+  .btc-ctl .seg button{flex:1}
+  .btc-ctl .chip{grid-column:1/-1;text-align:center}
+  /* kolom cari + tombol analisa */
+  .coin-bar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px}
+  .coin-bar .scr-q:only-child{grid-column:1/-1}
+  .coin-bar .btn{height:46px;padding:0 16px}
+  /* bar screener: tiap kelompok tombol satu baris penuh, bisa digeser bila kepanjangan */
+  .scr-bar{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .scr-bar>.seg{grid-column:1/-1;width:100%;display:flex;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .scr-bar>.seg[style*="display:none"]{display:none}
+  .scr-bar>.seg button{flex:1 0 auto}
+  .scr-bar>.scr-q{grid-column:1/-1;width:100%}
+  .scr-bar>.btn{grid-column:1/-1;width:100%;height:44px}
+  .scr-meta{margin:14px 0}
+  .scr-top{gap:10px}
+}
+</style>
 <script src="listing.js"></script>
 </body>
 </html>
