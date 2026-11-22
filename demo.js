@@ -6,8 +6,8 @@
 (()=>{
 'use strict';
 if(window.__wdDemo)return;window.__wdDemo=1;
-/* biaya dibuat rendah: koin Binance 0,02% per sisi, token DEX 0,3% per sisi */
-const KEY='wd_demo_v2',MIN=10000,FEE={c:.0002,d:.003},DEX='https://api.dexscreener.com/';
+/* demo murni: tanpa fee dan tanpa slippage (mau pakai fee? ubah angka di FEE, mis. c:.0002 = 0,02%) */
+const KEY='wd_demo_v2',MIN=10000,FEE={c:0,d:0},DEX='https://api.dexscreener.com/';
 const BN=['https://data-api.binance.vision/api/v3/','https://api.binance.com/api/v3/'];
 const WSB=['wss://data-stream.binance.vision/stream','wss://stream.binance.com:9443/stream'];
 const WSP='wss://pumpportal.fun/api/data';
@@ -31,8 +31,8 @@ let fx=0,fxAt=0,solUsd=0,cur=null,isOpen=false,entryOpen=false;
 const P={},H={},st={bn:0,pump:0,dex:0};
 const fee=id=>FEE[id[0]],stale=id=>!P[id]||Date.now()-P[id].t>(id[0]==='c'?45e3:3e4);
 const pidr=id=>P[id]&&fx?P[id].u*fx:null;
-/* price impact rata-rata (koin Binance sangat kecil; DEX dari likuiditas, rata-rata fill = setengah impact akhir) */
-function imp(id,v){if(id[0]==='c')return .0001;const R=(P[id]&&P[id].R||0)*fx;return R>0?v/(2*R+v):null}
+/* tanpa slippage: fill selalu di harga live. Untuk token DEX, tetap null bila likuiditas tidak diketahui (entry diblokir) */
+function imp(id,v){if(id[0]==='c')return 0;const R=(P[id]&&P[id].R||0)*fx;return R>0?0:null}
 /* nilai posisi. mk=true: harga pasar (tanpa biaya keluar) untuk tampilan live; mk=false: nilai bersih saat ditutup (fee + slippage) */
 function net(q,qty,mk){const p=pidr(q.id);if(p==null)return null;const i=mk?0:imp(q.id,qty*p);if(i==null)return null;const f=mk?0:fee(q.id);
   if(q.side==='S'){const pe=p*(1+i);return Math.max(0,qty*q.ep+qty*(q.ep-pe)-f*qty*pe)}
@@ -232,7 +232,7 @@ const css=document.createElement('style');css.textContent=`
 .dm-pg s{position:absolute;top:-4px;width:2px;height:16px;background:#fff;text-decoration:none;transform:translateX(-1px)}
 .dm-pg .px{width:14px;height:14px;top:-3px;bottom:auto;border-radius:50%;background:#fff;border:3px solid #000;box-shadow:0 0 0 1px rgba(255,255,255,.6);transform:translateX(-7px);transition:left .3s}
 .dm-pg em{position:absolute;top:15px;font-style:normal;font-size:.66rem;color:var(--muted);transform:translateX(-50%);white-space:nowrap}
-.dm-pcc{margin-top:10px}
+.dm-pcc{margin-top:10px}.dm-pcc .cc{max-width:300px}
 .dm-pa{display:flex;gap:8px;margin-top:12px}
 .dm-nd{color:var(--muted);font-size:.88rem;padding:8px 0}
 .dm-tw{overflow-x:auto}.dm-t{width:100%;border-collapse:collapse;font-size:.82rem;font-variant-numeric:tabular-nums}
@@ -271,7 +271,7 @@ root.innerHTML=`<div class="scr-in">
 <div class="dm-top" style="justify-content:space-between;margin-bottom:10px"><h3 class="dm-h3" style="margin:0">Riwayat</h3>
  <div class="dm-top"><select id="dmStart" aria-label="Saldo awal"><option value="10000000">Rp 10 juta</option><option value="50000000">Rp 50 juta</option><option value="100000000">Rp 100 juta</option><option value="1000000000">Rp 1 miliar</option></select><button class="dm-b s" id="dmReset" type="button">Reset akun</button></div></div>
 <div class="dm-p dm-tw" id="dmHist"></div>
-<p class="scr-note" style="color:var(--muted);font-size:.8rem;line-height:1.6;margin-top:8px"><b>Catatan.</b> Akun simulasi dengan uang virtual, bukan transaksi sungguhan dan bukan saran investasi. Entry/SL/TP1/TP2 otomatis diambil dari kartu screener. <b>Kena TP1, TP2, atau SL, posisi langsung ditutup penuh dan trading selesai.</b> Biaya dibuat rendah: fee 0,02% (koin Binance) dan 0,3% (token DEX) per sisi, ditambah price impact kecil dari likuiditas. PnL live dihitung dari harga pasar; biaya keluar dipotong saat posisi ditutup. SHORT hanya untuk koin Binance (simulasi tanpa leverage dan tanpa funding). <b>TP/SL hanya berjalan selama halaman ini terbuka.</b> Saldo tersimpan di browser ini saja. Token baru sangat berisiko; di dunia nyata bisa jatuh drastis atau tidak bisa dijual.</p>
+<p class="scr-note" style="color:var(--muted);font-size:.8rem;line-height:1.6;margin-top:8px"><b>Catatan.</b> Akun simulasi dengan uang virtual, bukan transaksi sungguhan dan bukan saran investasi. Entry/SL/TP1/TP2 otomatis diambil dari kartu screener. <b>Kena TP1, TP2, atau SL, posisi langsung ditutup penuh dan trading selesai.</b> Tanpa fee dan tanpa slippage: entry dan keluar di harga live, jadi PnL mulai dari nol. Di dunia nyata ada fee, spread, dan slippage (terutama token DEX), jadi hasil nyata akan lebih kecil. SHORT hanya untuk koin Binance (simulasi tanpa leverage dan tanpa funding). <b>TP/SL hanya berjalan selama halaman ini terbuka.</b> Saldo tersimpan di browser ini saja. Token baru sangat berisiko; di dunia nyata bisa jatuh drastis atau tidak bisa dijual.</p>
 </div>`;
 document.body.append(root);
 
@@ -307,7 +307,7 @@ function paintEntry(){
   else{const c=calcOpen(a,amt);
     if(c.e){t=c.e;er=1}else if(le){t=le;er=1}
     else{const pl=lv=>c.n*(lv-c.fillU)/c.fillU*sd-c.n*fee(id),dev=u?Math.abs(u-a.e)/Math.abs(a.e-a.sl):0;
-      t=`Modal ${rp(c.amt)} → ±${nf(c.qty,{maximumSignificantDigits:6})} ${esc(a.sym)} @ ${usd(c.fillU)} · fee ${rp(c.f)} · slippage ${(c.i*100).toFixed(2)}%. Jika kena SL ≈ ${sr(pl(a.sl))}, TP1 ≈ ${sr(pl(a.t1))}, TP2 ≈ ${sr(pl(a.t2))} (posisi selesai).`
+      t=`Modal ${rp(c.amt)} → ±${nf(c.qty,{maximumSignificantDigits:6})} ${esc(a.sym)} @ ${usd(c.fillU)}. Jika kena SL ≈ ${sr(pl(a.sl))}, TP1 ≈ ${sr(pl(a.t1))}, TP2 ≈ ${sr(pl(a.t2))} (posisi selesai).`
         +(dev>.3?` ⚠ Harga sudah bergeser ${(dev*100).toFixed(0)}% jarak SL dari entry screener.`:'')+(c.i>.03?' ⚠ Price impact besar.':'')}}
   E.deE.textContent=t;E.deE.className='dm-est'+(er?' e':'');E.deGo.disabled=!!er;
   E.deGo.className='dm-buy dm-b '+a.side;E.deGo.textContent='Entry '+(L?'LONG':'SHORT')+' via Demo'}
@@ -316,7 +316,7 @@ function paintEntry(){
 function chartSvg(q){
   const h=H[q.id],cs=h?h.m.slice(-48):[];
   if(cs.length<3)return '<p class="dm-nd" style="margin:0">Mengumpulkan data chart…</p>';
-  const W=320,HH=150,R=46,n=cs.length,cw=(W-R)/n,bw=Math.max(1,cw*.62),lv=[q.eu,q.sl,q.t1,q.t2];
+  const W=320,HH=80,R=46,n=cs.length,cw=(W-R)/n,bw=Math.max(1,cw*.62),lv=[q.eu,q.sl,q.t1,q.t2];
   let mn=Math.min(...cs.map(x=>x.l),...lv),mx=Math.max(...cs.map(x=>x.h),...lv);const pd=(mx-mn)*.05||mx*.001;mn-=pd;mx+=pd;
   const Y=v=>HH-(v-mn)/(mx-mn)*HH,f=v=>Y(v).toFixed(1);
   const zone=(a,b,fl)=>`<rect x="0" width="${W-R}" y="${Math.min(Y(a),Y(b)).toFixed(1)}" height="${Math.abs(Y(a)-Y(b)).toFixed(1)}" fill="${fl}"/>`;
