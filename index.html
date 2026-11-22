@@ -710,8 +710,8 @@ onSnapshot(query(collection(db,'projects'),orderBy('created','desc')),s=>{projec
         <button type="button" data-v="4h" aria-pressed="false">4j</button>
       </div>
       <div class="seg" id="scrMd" role="group" aria-label="Tampilan">
-        <button type="button" data-v="set" aria-pressed="true">Setup</button>
-        <button type="button" data-v="all" aria-pressed="false">Semua Koin</button>
+        <button type="button" data-v="set" aria-pressed="true">Screener</button>
+        <button type="button" data-v="all" aria-pressed="false">Cari &amp; Analisa</button>
       </div>
       <div class="seg" id="scrFl" role="group" aria-label="Arah">
         <button type="button" data-v="all" aria-pressed="true">Semua</button>
@@ -1065,7 +1065,8 @@ let tf='15m',flt='all',md='set',res=[],okN=0,isOpen=false,tk=0,timer=null,ws=nul
 let store={},fund={},fxs={},fr={},frAt=0,fng=null,fngAt=0,q='',COINS=[],LIST=[],an={},lim=60,subd=new Set(),dl=0;
 try{const c=JSON.parse(localStorage.getItem('wd_fund2')||'null');if(c){fund=c.f||{};fxs=c.x||{}}}catch(e){}
 const T={},px={},dirty=new Set(),hc={};
-const M=()=>q||md==='all'?'all':'set';
+const M=()=>md;
+const vis=()=>{$('scrQ').style.display=md==='all'?'':'none';$('scrFl').style.display=md==='all'?'none':''};
 
 const getJ=async(u,ms=9000)=>{const c=new AbortController(),t=setTimeout(()=>c.abort(),ms);
   try{const r=await fetch(u,{signal:c.signal});if(!r.ok)throw new Error(r.status);return await r.json()}finally{clearTimeout(t)}};
@@ -1283,12 +1284,12 @@ async function analyzeCoin(s,silent){
 function render(){
   const meta=$('scrMeta'),fg=$('scrFng');
   if(fng){fg.hidden=false;fg.className='fng '+(fng.v<=40?'f':fng.v>=60?'g':'n');fg.textContent='Fear & Greed '+fng.v+' · '+fng.t}else fg.hidden=true;
-  $('scrFl').style.display=M()==='all'?'none':'';
+  vis();
   if(M()==='all')return renderAll();
   if(res===null){meta.textContent='Gagal memuat data.';grid.innerHTML='<div class="scr-empty">Data pasar belum bisa dimuat.<br><button type="button" class="retry">Coba lagi</button></div>';return}
   const list=res.filter(c=>flt==='all'||c.dir===flt);
   meta.textContent=`${res.length} setup dari ${okN} koin · ${tf.replace('h','j')} · diperbarui ${at}`+(Object.keys(fund).length?'':' · fundamental tidak tersedia (skor teknikal saja)');
-  grid.innerHTML=list.length?list.map(card).join(''):'<div class="scr-empty">Belum ada setup yang cukup kuat di timeframe ini. Coba timeframe lain, atau pakai Semua Koin lalu tekan Analisa.</div>';
+  grid.innerHTML=list.length?list.map(card).join(''):'<div class="scr-empty">Belum ada koin yang kena screener di timeframe ini. Coba timeframe lain, atau buka tab Cari &amp; Analisa untuk cek koin tertentu.</div>';
 }
 
 async function runAll(force){
@@ -1366,7 +1367,7 @@ function openScr(){
   if(window.setMenu)setMenu(false);
   ov.hidden=false;document.body.style.overflow='hidden';
   $('scrX').focus({preventScroll:true});
-  run();timer=setInterval(()=>{if(!document.hidden)run()},60000);
+  vis();run();timer=setInterval(()=>{if(!document.hidden)run()},60000);
 }
 function closeScr(){
   if(!isOpen)return;isOpen=false;ov.hidden=true;
@@ -1386,26 +1387,24 @@ grid.addEventListener('error',e=>{const im=e.target;if(im.tagName==='IMG'&&im.pa
 function seg(el,fn){el.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
   el.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));fn(b.dataset.v)})}
 const mdSync=()=>$('scrMd').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===md));
-function switchMode(was){
-  if(M()==='all'&&was==='all'){lim=60;LIST.length?render():run();return}
-  res=[];grid.innerHTML='';wsStop();run()}
+function switchMode(){vis();res=[];grid.innerHTML='';wsStop();run()}
 seg($('scrTf'),v=>{tf=v;const old=Object.keys(an);an={};store={};res=[];grid.innerHTML='';wsStop();
   if(M()==='all')old.forEach(s=>{an[s]={busy:1}});
   run(1);if(M()==='all')old.forEach(s=>analyzeCoin(s))});
-seg($('scrMd'),v=>{const was=M();md=v;switchMode(was)});
-/* kolom pencarian: ketik kode koin apa pun (BTC, PEPE, WIF, BTCUSDT); kosongkan untuk kembali */
+seg($('scrMd'),v=>{md=v;switchMode()});
+/* kolom pencarian (tab Cari & Analisa): ketik kode koin apa pun (BTC, PEPE, WIF, BTCUSDT) */
 const qi=$('scrQ');let qt=0;
 function applyQ(){
   const n=qi.value.toUpperCase().replace(/[^A-Z0-9]/g,'').replace(/USDT$/,'').slice(0,12);
   if(n===q)return;
-  const was=M();q=n;switchMode(was);
+  q=n;lim=60;if(M()==='all')LIST.length?render():run();
 }
 qi.addEventListener('input',()=>{clearTimeout(qt);qt=setTimeout(applyQ,250)});
 qi.addEventListener('keydown',e=>{if(e.key==='Enter'){clearTimeout(qt);applyQ();qi.blur()}});
 seg($('scrFl'),v=>{flt=v;if(res)render()});
 /* dipanggil tombol "Analisa" di Live Market: buka screener langsung menganalisa koin itu */
 window.openScrFor=s=>{md='all';q=s;qi.value=s;lim=60;mdSync();
-  if(isOpen){res=[];grid.innerHTML='';wsStop();run()}else openScr();
+  if(isOpen)switchMode();else openScr();
   analyzeCoin(s)};
 
 /* dipakai bersama oleh screener saham */
