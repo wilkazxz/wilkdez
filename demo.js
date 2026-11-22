@@ -41,8 +41,31 @@ function equity(){let e=A.cash;Object.values(A.pos).forEach(q=>{const v=net(q,q.
 function floating(){let f=0;Object.values(A.pos).forEach(q=>{const v=net(q,q.qty,1);if(v!=null)f+=v-q.cost});return f}
 
 /* ---------- ikon koin ---------- */
-const iconUrl=o=>o.img||(P[o.id]&&P[o.id].img)||(o.kind==='c'?`https://assets.coincap.io/assets/icons/${String(o.sym).toLowerCase()}@2x.png`:`https://dd.dexscreener.com/ds-data/tokens/${o.chain}/${o.addr}.png`);
-const iconHtml=o=>{const L=esc((o.sym||'?')[0]),u=iconUrl(o);return `<span class="av"><span class="lt">${L}</span><img src="${esc(u)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()"></span>`};
+/* ikon dicoba berurutan dari banyak sumber: ikon kartu screener, cache CoinGecko, CoinCap, spothq, DexScreener.
+   Jika satu gagal dimuat, otomatis pindah ke sumber berikutnya; huruf pertama hanya dipakai bila semuanya gagal. */
+const ICK='wd_dmicons';let IC={};try{IC=JSON.parse(localStorage.getItem(ICK)||'{}')||{}}catch(e){IC={}}
+const fundImg=s=>{try{const c=JSON.parse(localStorage.getItem('wd_fund2')||'null');return(c&&c.f&&c.f[s]&&c.f[s].img)||''}catch(e){return''}};
+function iconSrcs(o){
+  const s=[],add=u=>{if(u&&/^https:\/\//.test(u)&&!s.includes(u))s.push(u)};
+  add(o.img);add(P[o.id]&&P[o.id].img);
+  if(o.kind==='c'){const L=String(o.sym).toLowerCase();
+    add(IC[o.sym]);add(fundImg(o.sym));
+    add(`https://assets.coincap.io/assets/icons/${L}@2x.png`);
+    add(`https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/${L}.png`)}
+  else add(`https://dd.dexscreener.com/ds-data/tokens/${o.chain}/${o.addr}.png`);
+  return s}
+const iconHtml=o=>{const L=esc((o.sym||'?')[0]),s=iconSrcs(o);
+  return `<span class="av dmav" data-sym="${esc(o.sym)}" data-k="${o.kind}"><span class="lt">${L}</span>${s.length?`<img class="dmi" src="${esc(s[0])}" data-q="${esc(JSON.stringify(s.slice(1)))}" alt="" referrerpolicy="no-referrer">`:''}</span>`};
+document.addEventListener('error',e=>{const im=e.target;if(!im||im.tagName!=='IMG'||!im.classList.contains('dmi'))return;
+  let q;try{q=JSON.parse(im.dataset.q||'[]')}catch(x){q=[]}
+  const n=q.shift();if(n){im.dataset.q=JSON.stringify(q);im.src=n}else im.remove()},true);
+/* koin yang belum punya ikon: ambil gambar resmi dari CoinGecko sekali, simpan di browser */
+const icTry=new Set();
+async function ensureIcon(o){
+  if(!o||o.kind!=='c'||IC[o.sym]||icTry.has(o.sym))return;icTry.add(o.sym);
+  try{const j=await getJ(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&symbols=${encodeURIComponent(String(o.sym).toLowerCase())}&per_page=1`,10000);
+    const u=j&&j[0]&&j[0].image;if(!u)return;IC[o.sym]=u;try{localStorage.setItem(ICK,JSON.stringify(IC))}catch(e){}
+    document.querySelectorAll('.dmav[data-k="c"]').forEach(el=>{if(el.dataset.sym===o.sym)el.outerHTML=iconHtml({kind:'c',sym:o.sym,id:'c:'+o.sym})})}catch(e){icTry.delete(o.sym)}}
 
 /* ---------- riwayat candle 1 menit per posisi (untuk chart mini) ---------- */
 async function seedHist(q){
@@ -365,7 +388,7 @@ function paintAcct(){
     setT(lx,lp?usd(lp)+(old?' ○':''):'—');
     const px=el.querySelector('.px');if(px&&lp)px.style.left=pgPos(q,lp).toFixed(1)+'%';
     el.querySelector('.dm-pcc').innerHTML=chartSvg(q);
-    seedHist(q)});
+    seedHist(q);ensureIcon(q)});
   const hs=A.hist.length+':'+(A.hist[0]?A.hist[0].t:0);
   if(hs!==histSig){histSig=hs;
     const d=t=>new Date(t).toLocaleString('id-ID',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
@@ -389,6 +412,7 @@ function closeP(){isOpen=false;root.hidden=true;document.body.style.overflow=pre
 function openEntry(a){
   cur=a;entryOpen=true;E.deA.value='';
   E.deT.innerHTML=`${iconHtml(a)}<span>${a.side==='L'?'LONG':'SHORT'} ${esc(a.sym)}${a.kind==='c'?'/USDT':''}</span>`;
+  ensureIcon(a);
   em.hidden=false;start();sync();if(a.kind==='c'&&!P[a.id])cexInit(a.sym);go()}
 function closeEntry(){entryOpen=false;em.hidden=true;cur=null;sync();idle()}
 root.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)return;
