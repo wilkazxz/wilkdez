@@ -489,11 +489,10 @@ function paintAcct(){
   E.dmSt.innerHTML=`<span><i class="${st.bn?'on':''}"></i>Binance WS</span><span><i class="${st.pump?'on':''}"></i>PumpPortal WS</span><span><i class="${st.dex?'on':''}"></i>DexScreener</span><span>Kurs USDT/IDR ${fx?'Rp '+nf(fx,{maximumFractionDigits:0}):'…'}</span>`}
 
 /* tombol "Akun Demo" di bar screener: selalu menampilkan ekuitas & PnL live */
-let bt=null;
-function badge(){if(!bt)return;const n=Object.keys(A.pos).length,eq=equity(),pl=eq-A.start;
-  const t='Akun Demo · '+rp(eq)+(n?' · '+sr(pl)+' · '+n+' posisi':'');
-  if(bt.textContent!==t)bt.textContent=t;
-  bt.style.color=n?(pl>=0?'#2ee59d':'#ff5c6c'):''}
+let bt=[];
+function badge(){if(!bt.length)return;const n=Object.keys(A.pos).length,eq=equity(),pl=eq-A.start,col=n?(pl>=0?'#2ee59d':'#ff5c6c'):'';
+  bt.forEach(b=>{const t=b.id==='dmTab'?'Akun Demo · '+rp(eq)+(n?' · '+sr(pl):''):'Akun Demo · '+rp(eq)+(n?' · '+sr(pl)+' · '+n+' posisi':'');
+    if(b.textContent!==t)b.textContent=t;b.style.color=col})}
 let tm=0;
 function go(){rec();if(isOpen)paintAcct();if(entryOpen)paintEntry();badge()}
 function sched(f){if(f){clearTimeout(tm);tm=0;go();return}if(tm)return;tm=setTimeout(()=>{tm=0;go()},250)}
@@ -536,7 +535,9 @@ document.addEventListener('click',e=>{
   openEntry(a)});
 
 const ref=document.getElementById('scrRef');
-if(ref){bt=document.createElement('button');bt.type='button';bt.id='dmOpen';ref.after(bt);bt.onclick=openP;badge()}
+const mt=document.getElementById('mkTabs');   /* tombol Akun Demo: di tab panel Crypto + di bar screener */
+[[ref&&(b=>ref.after(b)),'dmOpen'],[mt&&(b=>mt.append(b)),'dmTab']].forEach(([put,id])=>{if(!put)return;const b=document.createElement('button');b.type='button';b.id=id;put(b);b.onclick=openP;bt.push(b)});
+badge();
 if(Object.keys(A.pos).length)start();   /* posisi terbuka: TP/SL tetap dipantau selama halaman terbuka */
 addEventListener('pagehide',save);
 window.WDDemo={open:openP,close:closeP};
