@@ -14,7 +14,7 @@ const NETS=[['solana','Solana · pump.fun'],['base','Base'],['bsc','BSC']];
 const ADDR={solana:/^[1-9A-HJ-NP-Za-km-z]{32,44}$/,base:/^0x[0-9a-fA-F]{40}$/,bsc:/^0x[0-9a-fA-F]{40}$/};
 const KEY='wd_bot';
 let B;try{B=JSON.parse(localStorage.getItem(KEY))}catch(e){}
-B=Object.assign({on:0,pct:10,nets:['solana','base','bsc'],done:{},log:[]},B||{});
+B=Object.assign({on:0,agg:2,pct:10,nets:['solana','base','bsc'],done:{},log:[]},B||{});
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(B))}catch(e){}};
 const getJ=async(u,ms=9000)=>{const c=new AbortController(),t=setTimeout(()=>c.abort(),ms);
   try{const r=await fetch(u,{signal:c.signal});if(!r.ok)throw new Error(r.status);return await r.json()}finally{clearTimeout(t)}};
@@ -38,8 +38,9 @@ const go=document.createElement('button');go.type='button';go.className='bt-go';
 run.insertBefore(go,run.querySelector('.dm-chip'));
 const card=document.createElement('div');card.className='dm-card';
 card.innerHTML=`<div class="dm-hd"><h3 class="dm-h3">🤖 Auto Trade (demo)</h3><small id="btSt"></small></div>
-<p class="dm-wr" style="margin:0">Bot membeli otomatis token baru yang <b>lolos filter sniper</b>, sebesar <b id="btP"></b> ekuitas per trade. Keluar otomatis di <b>SL −20%</b>, <b>TP +30%</b>, atau time-stop 90 menit. Maks ${CFG.maxPos} posisi bot.</p>
+<p class="dm-wr" style="margin:0">Bot membeli otomatis token baru (mode <b>Gas</b>: umur 1–30 menit, hanya buang yang honeypot/dump/sepi), sebesar <b id="btP"></b> ekuitas per trade. Keluar otomatis di <b>SL −20%</b>, <b>TP +30%</b>, atau time-stop 90 menit. Maks ${CFG.maxPos} posisi bot.</p>
 <div class="bt-row" id="btNets"></div>
+<div class="bt-row" id="btMode"><small style="color:var(--muted)">Filter:</small><button type="button" data-m="2">Gas (menitan)</button><button type="button" data-m="1">Agresif</button><button type="button" data-m="0">Ketat</button></div>
 <div class="bt-row" id="btPct"><small style="color:var(--muted)">Modal per trade:</small></div>
 <ul class="bt-lg" id="btLg"></ul>`;
 col.insertBefore(card,col.children[1]||null);
@@ -48,7 +49,8 @@ $('btNets').innerHTML=NETS.map(n=>`<button type="button" data-n="${n[0]}">${n[1]
 $('btPct').insertAdjacentHTML('beforeend',[5,10,20].map(p=>`<button type="button" data-p="${p}">${p}%</button>`).join(''));
 card.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
   if(b.dataset.n){const n=b.dataset.n;B.nets=B.nets.includes(n)?B.nets.filter(x=>x!==n):B.nets.concat(n);save();paint()}
-  if(b.dataset.p){B.pct=+b.dataset.p;save();paint()}});
+  if(b.dataset.p){B.pct=+b.dataset.p;save();paint()}
+  if(b.dataset.m){B.agg=+b.dataset.m;save();paint();note('Filter: <b>'+['Ketat','Agresif','Gas'][B.agg]+'</b>')}});
 go.onclick=()=>toggle();
 
 function stats(){let n=0,w=0,p=0;D.A().hist.forEach(h=>{if(h.b&&h.s==='JUAL'){n++;p+=h.pnl;if(h.pnl>0)w++}});return{n,w,p}}
@@ -56,14 +58,15 @@ function paint(){
   go.textContent='🤖 Auto Trade: '+(B.on?'ON':'OFF');go.className='bt-go'+(B.on?' on':'');
   $('btP').textContent=B.pct+'%';
   card.querySelectorAll('[data-n]').forEach(b=>b.setAttribute('aria-pressed',B.nets.includes(b.dataset.n)));
+  card.querySelectorAll('[data-m]').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.m===B.agg));
   card.querySelectorAll('[data-p]').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.p===B.pct));
   const A=D.A(),open=Object.values(A.pos).filter(q=>q.auto).length,s=stats();
   $('btSt').textContent=B.on?`aktif · ${open}/${CFG.maxPos} posisi`:'nonaktif';
-  $('btLg').innerHTML=(s.n?`<li><b>${s.n}</b> trade selesai · menang <b>${Math.round(s.w/s.n*100)}%</b> · PnL bot <b style="color:${s.p>=0?'#2ee59d':'#ff5c6c'}">${rp(s.p)}</b></li>`:'')
+  $('btLg').innerHTML=(B.on&&rep?`<li><b>Scan terakhir:</b> ${rep}</li>`:'')+(s.n?`<li><b>${s.n}</b> trade selesai · menang <b>${Math.round(s.w/s.n*100)}%</b> · PnL bot <b style="color:${s.p>=0?'#2ee59d':'#ff5c6c'}">${rp(s.p)}</b></li>`:'')
     +B.log.map(l=>`<li>${hm(l.t)} · ${l.m}</li>`).join('')||'<li>Belum ada aktivitas. Tekan tombol Auto Trade untuk mulai.</li>'}
 
 /* ---------- mesin bot ---------- */
-let ni=0,busy=0,tm=0,wt=0;const tries={};
+let ni=0,busy=0,tm=0,wt=0,rep='';const tries={};
 const key=(n,a)=>n==='solana'?a:a.toLowerCase();
 async function scan(){
   if(busy||!B.on||!B.nets.length)return;busy=1;
@@ -71,15 +74,20 @@ async function scan(){
   try{
     const j=await getJ(`https://api.geckoterminal.com/api/v2/networks/${net}/new_pools?include=base_token&page=1`,10000),list=[];
     (j.data||[]).forEach(d=>{try{const x=S.gt(d);if(x&&x.t0&&x.p>0)list.push(x)}catch(e){}});
-    for(const x of list.sort((a,b)=>S.score(b).sc-S.score(a).sc)){if(!B.on)break;if(await consider(net,x))break}
+    list.sort((a,b)=>B.agg===2?b.t0-a.t0:S.score(b).sc-S.score(a).sc);   /* mode Gas: yang paling baru dulu */
+    const t=list[0],r=t&&S.score(t);
+    rep=`${hm(Date.now())} · ${net}: ${list.length} pool dipindai`+(t?` · terbaik ${esc(t.n)} skor ${r.sc.toFixed(1)}/10 · ${r.fl.length?esc(r.fl[0]):'tanpa tanda risiko'} · likuiditas $${Math.round(t.liq/1e3)}rb`:' · tidak ada data');paint();
+    for(const x of list){if(!B.on)break;if(await consider(net,x))break}
   }catch(e){if(B.on&&!/abort/i.test(String(e)))note('Data '+net+' belum bisa dimuat (rate limit?), mencoba lagi')}
   busy=0}
 async function consider(net,x){
   if(!ADDR[net].test(x.tok||''))return;
   const k=key(net,x.tok),id='d:'+k,A=D.A(),age=(Date.now()-x.t0)/6e4;
   if(B.done[id]||A.pos[id]||(tries[id]||0)>=CFG.tries)return;
-  const r=S.score(x);
-  if(!r.ok||x.liq<CFG.minLiq||age<CFG.minAge||age>CFG.maxAge)return;
+  const r=S.score(x),g=B.agg===2,ml=g?5000:B.agg?8000:CFG.minLiq,a0=g?1:CFG.minAge,a1=g?30:CFG.maxAge;
+  /* GAS: koin umur menitan, hanya disaring dari yang jelas jelek (honeypot / sedang dump / sepi total) */
+  const pass=g?!r.fl.some(f=>/honeypot|Dump/i.test(f))&&x.b5+x.s5>=3&&x.c5>-20:B.agg?r.sc>=5&&!r.fl.some(f=>/honeypot|Dump|tipis/i.test(f)):r.ok;
+  if(!pass||x.liq<ml||age<a0||age>a1)return;
   if(Object.values(A.pos).filter(q=>q.auto).length>=CFG.maxPos)return;
   const amt=Math.floor(Math.min(D.equity()*B.pct/100,A.cash));
   if(amt<10000){note('Saldo tunai kurang untuk entry berikutnya');return 1}
@@ -88,7 +96,7 @@ async function consider(net,x){
   let p=0,liq=0;
   try{const j=await getJ(`https://api.dexscreener.com/latest/dex/pairs/${net}/${x.a}`,6000),q=j.pairs&&j.pairs[0];
     p=+(q&&q.priceUsd)||0;liq=+(q&&q.liquidity&&q.liquidity.usd)||0}catch(e){}
-  if(!(p>0)||liq<CFG.minLiq)return;
+  if(!(p>0)||liq<ml)return;
   const a={id,kind:'d',chain:net,addr:k,sym:String(x.n).slice(0,24),name:x.n,side:'L',e:p,sl:p*(1-CFG.sl),t1:p*(1+CFG.tp1),t2:p*(1+CFG.tp2),auto:1,src:'bot'};
   if(!D.buy(a,amt,p,liq))return;
   B.done[id]=Date.now();for(const i in B.done)if(Date.now()-B.done[i]>864e5)delete B.done[i];
