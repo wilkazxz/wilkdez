@@ -17,7 +17,7 @@ const sr=v=>(v>=0?'+':'')+rp(v),sg=v=>(v>=0?'+':'')+v.toFixed(2)+'%',cl=v=>v>=0?
 const fpm=p=>!(p>0)?'—':p>=1?'$'+p.toLocaleString('en-US',{maximumFractionDigits:4}):'$'+p.toFixed(Math.min(12,Math.ceil(-Math.log10(p))+3));
 const ago=t=>{const s=Math.max(0,(Date.now()-t)/1e3);return s<60?Math.floor(s)+' dtk':s<3600?Math.floor(s/60)+' mnt':(s/3600).toFixed(1)+' jam'};
 const hm=t=>new Date(t).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
-const WHY={TP:['TP','up'],TRAIL:['Trailing','up'],BE:['Impas','n'],SL:['Stop loss','dn'],RUG:['Rug / likuid. turun','dn'],TIME:['Time-stop','n'],NOFEED:['Harga hilang','dn']};
+const WHY={TP:['TP','up'],TRAIL:['Trailing','up'],BE:['Impas','n'],SL:['Stop loss','dn'],RUG:['Rug / likuid. turun','dn'],TIME:['Time-stop','n'],NOFEED:['Harga hilang','dn'],MANUAL:['Tutup manual','n']};
 
 /* ---------- gaya ---------- */
 const css=document.createElement('style');
@@ -100,12 +100,12 @@ root.innerHTML=`<div class="scr-in">
 <div id="btAl"></div>
 <div class="bt-stats" id="btStats"></div>
 <div class="bt-grid">
- <div class="bt-col"><div><div class="bt-hd"><h3>Posisi aktif</h3><small id="btNp"></small></div><div class="bt-list" id="btPos"></div></div></div>
+ <div class="bt-col"><div><div class="bt-hd"><h3>Posisi aktif</h3><small id="btNp"></small><button type="button" id="btCa" class="bt-open btn btn-ghost btn-sm">Close semua</button></div><div class="bt-list" id="btPos"></div></div></div>
  <div class="bt-col">
   <div class="bt-card"><div class="bt-hd"><h3>Pengaturan</h3></div>
    <span class="bt-lbl">Mode filter</span><div class="bt-seg" id="btMode"></div><p class="bt-hint" id="btModeH"></p>
    <span class="bt-lbl">Modal per trade (dari ekuitas)</span><div class="bt-seg" id="btPct"><button type="button" data-p="5">5%</button><button type="button" data-p="10">10%</button><button type="button" data-p="20">20%</button></div>
-   <p class="bt-hint">Bot memegang maks ${MAXPOS} posisi (8 per jaringan). Pakai 5% agar 20 posisi muat.</p>
+   <p class="bt-hint" id="btPctH"></p>
    <span class="bt-lbl">Jaringan yang dipindai</span><div class="bt-seg" id="btNets"></div>
    <button type="button" id="btRst" class="bt-open btn btn-ghost btn-sm" style="margin-top:16px">Reset simulasi</button></div>
   <div class="bt-card"><div class="bt-hd"><h3>Grafik ekuitas</h3><small id="btEqN"></small></div><div class="bt-eqc" id="btEqc"></div></div>
@@ -116,6 +116,8 @@ root.innerHTML=`<div class="scr-in">
 <p class="bt-note"><b>Cara kerja.</b> Bot berjalan <b>di browser ini</b> (tanpa server dan tanpa database): data harga dari DexScreener, saldo dan riwayat tersimpan di perangkat. Bot hanya bekerja <b>selama halaman web terbuka</b>; panel boleh ditutup. Setiap ±60 detik bot memindai koin baru (Solana/pump.fun, Base, BSC), menilai skor 0–10 dari likuiditas, volume, tekanan beli dan momentum, lalu masuk LONG sebesar modal per trade. Keluar otomatis: <b>SL −20%</b>; saat naik +20% SL pindah ke titik impas; saat +30% <b>trailing 15%</b> dari puncak; <b>TP +50%</b>; <b>time-stop 90 mnt</b>; keluar darurat bila likuiditas turun &gt; 50%. Pengaman: bot OFF otomatis bila rugi harian mencapai 10%, dan jeda 30 mnt setelah 3 SL beruntun. Ini <b>akun simulasi dengan uang virtual</b>, tanpa fee dan slippage, jadi hasil nyata akan lebih buruk. Token baru sangat berisiko (rug pull, honeypot). Bukan saran investasi.</p>
 </div>`;
 document.body.append(root);
+if(typeof Element!=='undefined'){const ihd=Object.getOwnPropertyDescriptor(Element.prototype,'innerHTML');
+  ['btStats','btEqc','btEv','btHist','btAl'].forEach(id=>{const e=$(id);Object.defineProperty(e,'innerHTML',{configurable:true,get(){return ihd.get.call(this)},set(h){if(this._h!==h){this._h=h;ihd.set.call(this,h)}}})})}
 $('btMode').innerHTML=MODES.map(m=>`<button type="button" data-m="${m[0]}">${m[1]}</button>`).join('');
 $('btNets').innerHTML=NETS.map(n=>`<button type="button" data-n="${n[0]}">${n[1]}</button>`).join('');
 
@@ -132,11 +134,23 @@ const cfg=()=>ST;
 function av(p){const L=esc((p.sym||'?')[0].toUpperCase()),u=`https://dd.dexscreener.com/ds-data/tokens/${p.ch}/${p.a}.png`;
   return `<div class="av" data-l="${L}" data-ch="${esc(p.ch)}" data-tok="${esc(p.a)}"><span class="lt">${L}</span><img src="${esc(u)}" alt="" loading="lazy" referrerpolicy="no-referrer"></div>`}
 function posHtml(p){
-  const r=p.px/p.ep-1,pl=p.cost*r,lo=p.sl,hi=p.tp,at=v=>Math.max(0,Math.min(100,(v-lo)/(hi-lo)*100)).toFixed(1);
-  return `<article class="bt-pos${r<0?' neg':''}"><div class="bt-ph">${av(p)}<div class="bt-pn"><b>${esc(p.sym)}</b><span class="bt-tag">${p.ch==='solana'&&/^pump/.test(p.dex||'')?'pump.fun':esc(p.ch)}</span><small>umur ${ago(p.t)} · skor ${p.sc||'—'}/10 · modal ${rp(p.cost)}</small></div>
-  <div class="bt-pr"><b class="${cl(pl)}">${sr(pl)}</b><small class="${cl(r)}">${sg(r*100)}</small></div></div>
-  <div class="bt-bar"><i style="left:${at(p.px)}%"></i><s style="left:${at(p.ep)}%"></s><em style="left:0">SL</em><em style="left:${at(p.ep)}%">Entry</em><em style="left:100%">TP</em></div>
-  <div class="bt-tiles"><div><small>Entry</small><b>${fpm(p.ep)}</b></div><div><small>Sekarang</small><b>${fpm(p.px)}</b></div><div><small>Stop (trailing)</small><b class="bt-dn">${fpm(p.sl)}</b></div><div><small>Take profit</small><b class="bt-up">${fpm(p.tp)}</b></div></div></article>`}
+  return `<article class="bt-pos" data-id="${esc(p.id)}"><div class="bt-ph">${av(p)}<div class="bt-pn"><b>${esc(p.sym)}</b><span class="bt-tag">${p.ch==='solana'&&/^pump/.test(p.dex||'')?'pump.fun':esc(p.ch)}</span><small data-f="meta"></small></div>
+  <div class="bt-pr"><b data-f="pl"></b><small data-f="rt"></small></div></div>
+  <div class="bt-bar"><i data-f="bi"></i><s data-f="be"></s><em style="left:0">SL</em><em data-f="bem">Entry</em><em style="left:100%">TP</em></div>
+  <div class="bt-tiles"><div><small>Entry</small><b data-f="ep"></b></div><div><small>Sekarang</small><b data-f="px"></b></div><div><small>Stop (trailing)</small><b class="bt-dn" data-f="sl"></b></div><div><small>Take profit</small><b class="bt-up" data-f="tp"></b></div></div></article>`}
+function posFill(el,p){
+  const r=p.px/p.ep-1,pl=p.cost*r,lo=p.sl,hi=p.tp,at=v=>Math.max(0,Math.min(100,(v-lo)/(hi-lo)*100)).toFixed(1),f=k=>el.querySelector('[data-f="'+k+'"]');
+  el.classList.toggle('neg',r<0);
+  f('meta').textContent='umur '+ago(p.t)+' · skor '+(p.sc||'—')+'/10 · modal '+rp(p.cost);
+  const x=f('pl');x.textContent=sr(pl);x.className=cl(pl);
+  const y=f('rt');y.textContent=sg(r*100);y.className=cl(r);
+  f('bi').style.left=at(p.px)+'%';f('be').style.left=at(p.ep)+'%';f('bem').style.left=at(p.ep)+'%';
+  f('ep').textContent=fpm(p.ep);f('px').textContent=fpm(p.px);f('sl').textContent=fpm(p.sl);f('tp').textContent=fpm(p.tp)}
+function renderPos(ps,emptyHtml){
+  const box=$('btPos'),ids=ps.map(p=>p.id).join('|');
+  if(!ps.length){if(box._ids!==''||box._h!==emptyHtml){box._ids='';box._h=emptyHtml;box.innerHTML=emptyHtml}return}
+  if(box._ids!==ids){box.innerHTML=ps.map(posHtml).join('');box._ids=ids;box._h=null}
+  ps.forEach((p,i)=>posFill(box.children[i],p))}
 function eqSvg(){
   const d=ST.eq||[];if(d.length<2)return '<p class="bt-hint">Grafik terbentuk seiring waktu (1 titik per 10 detik).</p>';
   const W=320,H=120,vs=d.map(x=>x.v).concat(ST.start);let mn=Math.min(...vs),mx=Math.max(...vs);const pd=(mx-mn)*.12||mx*.001;mn-=pd;mx+=pd;
@@ -147,10 +161,11 @@ function paint(){
   const c=cfg(),on=!!c.on;
   $('btSw').setAttribute('aria-checked',on);$('btSwT').textContent=on?'AUTO TRADE: ON':'AUTO TRADE: OFF';$('btSwT').style.color=on?'#2ee59d':'';
     $('btDot').className='bt-dot '+(err?'off':on?'on':'');
-  $('btConn').textContent=err?'Gangguan data':on?(ST.ts?'Bot aktif · update '+ago(ST.ts)+' lalu':'Bot aktif'):'Bot OFF';
+  $('btConn').textContent=err?'Gangguan data':on?'Bot aktif · live':'Bot OFF';
   $('btAl').innerHTML=err?`<div class="bt-alert"><b>${esc(err)}</b> Bot mencoba lagi otomatis. Posisi yang terbuka tidak dijual sampai harga berhasil diambil.</div>`:'';
   $('btMode').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.m===c.agg));
   $('btModeH').textContent=(MODES.find(m=>m[0]===c.agg)||MODES[0])[2];
+  $('btPctH').textContent='Dengan modal '+c.pct+'% per trade, saldo cukup untuk maks '+Math.min(MAXPOS,Math.floor(100/c.pct))+' posisi sekaligus (batas bot '+MAXPOS+', 8 per jaringan). Pakai 5% agar 20 posisi muat.';
   $('btPct').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.p===c.pct));
   $('btNets').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',c.nets.includes(b.dataset.n)));
   if(!ST){$('btStats').innerHTML='';$('btPos').innerHTML='<div class="bt-empty">Menunggu data dari server…</div>';return}
@@ -158,8 +173,8 @@ function paint(){
   setTgt(eq);
   $('btStats').innerHTML=[['PnL total',sr(pl),cl(pl)],['PnL hari ini',sr(day),cl(day)],['PnL terealisasi',ST.n?sr(ST.rl):'—',ST.n?cl(ST.rl):''],['Win rate',wr+(ST.n?` (${ST.w}/${ST.n})`:''),''],['Posisi aktif',np+' / '+MAXPOS,''],['Saldo tunai',rp(ST.cash),'']]
     .map(s=>`<div class="bt-st"><small>${s[0]}</small><b class="${s[2]}">${s[1]}</b></div>`).join('');
-  const ps=Object.values(ST.pos||{}).sort((a,b)=>b.t-a.t);$('btNp').textContent=np?np+' posisi':'';
-  $('btPos').innerHTML=ps.length?ps.map(posHtml).join(''):`<div class="bt-empty">Belum ada posisi.<br>${on?'Bot sedang memindai pool baru…':'Nyalakan <b>Auto Trade</b> untuk mulai.'}</div>`;
+  const ps=Object.values(ST.pos||{}).sort((a,b)=>b.t-a.t);$('btNp').textContent=np?np+' posisi':'';$('btCa').hidden=!np;
+  renderPos(ps,`<div class="bt-empty">Belum ada posisi.<br>${on?'Bot sedang memindai pool baru…':'Nyalakan <b>Auto Trade</b> untuk mulai.'}</div>`);
   $('btEqc').innerHTML=eqSvg();$('btEqN').textContent=ST.eq&&ST.eq.length>1?'modal awal '+rp(ST.start):'';
   $('btScan').textContent=on&&ST.scan?'Scan terakhir: '+ST.scan:on?'':'Bot OFF. Posisi yang masih terbuka tetap dipantau TP/SL.';
   $('btEv').innerHTML=(ST.evt||[]).length?ST.evt.slice(0,20).map(e=>`<div class="bt-ev"><time>${hm(e.t)}</time>${e.m}</div>`).join(''):'<p class="bt-hint">Belum ada aktivitas.</p>';
@@ -201,10 +216,10 @@ function judge(p,agg){
   const R=RULE[agg]||RULE[2],now=Date.now(),age=p.pairCreatedAt?(now-p.pairCreatedAt)/60000:-1,liq=liqOf(p),
     v1=(p.volume&&p.volume.h1)||0,t1=(p.txns&&p.txns.h1)||{buys:0,sells:0},b=t1.buys||0,sl=t1.sells||0,tt=b+sl,
     c5=(p.priceChange&&p.priceChange.m5)||0,c1=(p.priceChange&&p.priceChange.h1)||0,fdv=p.fdv||0;
-  if(age<1||age>R.age)return{ok:0};
-  if(liq<R.liq)return{ok:0};
+  if(age<1||age>R.age)return{ok:0,r:'umur'};
+  if(liq<R.liq)return{ok:0,r:'likuiditas'};
   const honey=b>=15&&sl===0,dump=(tt>=20&&sl>b*2.5)||c1<-40||c5<-10,risk=(liq>0&&fdv/liq>300)||c5<-5;
-  if(honey||dump||(R.strict&&risk))return{ok:0};
+  if(honey||dump||(R.strict&&risk))return{ok:0,r:'risiko'};
   let sc=0;
   sc+=liq>=50000?2:liq>=15000?1.5:liq>=8000?1:liq>=3000?.5:0;
   const r=liq?v1/liq:0;sc+=r>=2?2:r>=.7?1.5:r>=.2?1:r>=.05?.5:0;
@@ -213,7 +228,7 @@ function judge(p,agg){
   sc+=tt>=200?1:tt>=50?.5:0;
   sc+=age>=5&&age<=180?1:age<=720?.5:0;
   sc=Math.max(0,Math.min(10,Math.round(sc*10)/10));
-  return{ok:sc>=R.sc,sc}}
+  return{ok:sc>=R.sc,sc,r:'skor'}}
 
 /* ---------- eksekusi trade (virtual) ---------- */
 function enter(k,pr,sc){
@@ -254,18 +269,21 @@ async function scan(){
   if(t<ST.pauseUntil){ST.scan=hm(t)+' · jeda sampai '+hm(ST.pauseUntil);return}
   if(Object.keys(ST.pos).length>=MAXPOS){ST.scan=hm(t)+' · posisi penuh ('+MAXPOS+')';return}
   for(const k in ST.seen)if(ST.seen[k]<t)delete ST.seen[k];
-  const rs=await Promise.allSettled([jget(DX+'token-profiles/latest/v1'),jget(DX+'token-boosts/latest/v1')]);
+  const rs=await Promise.allSettled(['token-profiles/latest/v1','token-boosts/latest/v1','token-boosts/top/v1','community-takeovers/latest/v1','ads/latest/v1'].map(u=>jget(DX+u)));
   if(rs.every(r=>r.status==='rejected'))throw rs[0].reason;
   const seen=new Set(),use=[];
   rs.forEach(r=>{if(r.status==='fulfilled'&&Array.isArray(r.value))r.value.forEach(x=>{
     if(!x||!x.tokenAddress||!ST.nets.includes(x.chainId))return;
     const k=key(x.chainId,x.tokenAddress);if(seen.has(k)||ST.seen[k]||ST.pos[k])return;seen.add(k);use.push([k,x.tokenAddress])})});
-  const L=use.slice(0,30);
+  const L=use.slice(0,60);
   if(!L.length){ST.scan=hm(t)+' · belum ada koin baru';return}
-  const m=await pairsFor(L.map(x=>x[1]));let buy=0;
-  for(const [k] of L){ST.seen[k]=t+30*6e4;const pr=m.get(k);if(!pr)continue;
-    const j=judge(pr,ST.agg);if(j.ok)buy+=enter(k,pr,j.sc)}
-  ST.scan=hm(t)+' · '+L.length+' koin dinilai · '+buy+' dibeli'}
+  const m=await pairsFor(L.map(x=>x[1]));let buy=0;const rj={};
+  const no=w=>{rj[w]=(rj[w]||0)+1};
+  for(const [k] of L){ST.seen[k]=t+10*6e4;const pr=m.get(k);if(!pr){no('tanpa data');continue}
+    const j=judge(pr,ST.agg);if(!j.ok){no(j.r);continue}
+    if(enter(k,pr,j.sc))buy++;else no('slot/saldo penuh')}
+  const why=Object.entries(rj).map(e=>e[0]+' '+e[1]).join(', ');
+  ST.scan=hm(t)+' · '+L.length+' koin dinilai · '+buy+' dibeli'+(why?' · ditolak: '+why:'')}
 
 /* ---------- loop utama ---------- */
 let busy=0,lastPx=0,lastScan=0,lastEq=0;
@@ -276,7 +294,7 @@ async function loop(){
   try{
     const d=new Date().toDateString();if(ST.day!==d){ST.day=d;ST.dayEq=equity()}
     if(Object.keys(ST.pos).length&&t-lastPx>=4000){lastPx=t;try{await updatePrices()}catch(x){e=x.message||String(x)}}
-    if(ST.on&&t-lastScan>=60000){lastScan=t;try{await scan()}catch(x){e=x.message||String(x)}}
+    if(ST.on&&t-lastScan>=30000){lastScan=t;try{await scan()}catch(x){e=x.message||String(x)}}
     err=e;
     if(ST.on&&equity()<=ST.dayEq*.9){ST.on=0;ev('Rugi harian 10% tercapai: Auto Trade dimatikan otomatis')}
   }finally{
@@ -289,6 +307,12 @@ function send(o){
   if('on' in o){ev(o.on?'Auto Trade <b>ON</b>':'Auto Trade <b>OFF</b>');
     if(o.on){lastScan=0;lastPx=0;if(equity()<=ST.dayEq*.9)ST.dayEq=equity()}}
   Object.assign(ST,o);save();paint();loop()}
+function closeAll(){
+  const ps=Object.values(ST.pos);if(!ps.length)return;
+  const fl=ps.reduce((a,p)=>a+p.cost*(p.px/p.ep-1),0);
+  if(!confirm('Tutup semua '+ps.length+' posisi sekarang di harga terakhir? PnL mengambang: '+sr(fl)))return;
+  ps.forEach(p=>exit(p,'MANUAL'));ev('Close semua: '+ps.length+' posisi ditutup manual');
+  ST.eqNow=equity();save();paint()}
 function reset(){
   if(!confirm('Reset saldo ke Rp 100.000.000 dan hapus semua posisi & riwayat?'))return;
   const k={agg:ST.agg,pct:ST.pct,nets:ST.nets};ST=Object.assign(fresh(),k);lastEq=0;err='';save();paint()}
@@ -298,6 +322,7 @@ root.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)retur
   if(b.id==='btX')return close();
   if(b.id==='btSw')return send({on:ST.on?0:1});
   if(b.id==='btRst')return reset();
+  if(b.id==='btCa')return closeAll();
   if(b.dataset.m!=null)return send({agg:+b.dataset.m});
   if(b.dataset.p)return send({pct:+b.dataset.p});
   if(b.dataset.n){const c=cfg().nets,n=c.includes(b.dataset.n)?c.filter(x=>x!==b.dataset.n):c.concat(b.dataset.n);if(n.length)send({nets:n})}});
