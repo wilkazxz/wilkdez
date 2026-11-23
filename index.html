@@ -249,6 +249,9 @@ h1 span{display:block;background:linear-gradient(180deg,#fff 0,#8d8d8d 100%);-we
 .cw .res .sc{border:0;padding:0;background:none}.cw .res .sc-h{display:none}
 .tags a,.tags button{padding:3px 9px;border-radius:999px;border:1px solid var(--line);color:#fff;font-size:.74rem;text-decoration:none}
 .tags .rk{color:#ff5c6c;border-color:rgba(255,92,108,.5)}
+.sc.nw{border-color:#2ee59d;box-shadow:0 0 0 1px rgba(46,229,157,.35)}.cw.nl{border-color:#ffd166}
+.scr-tz{position:fixed;left:50%;top:calc(14px + env(safe-area-inset-top));transform:translate(-50%,-20px);z-index:420;max-width:92vw;padding:12px 18px;border-radius:18px;background:#111;border:1px solid #2ee59d;font-size:.9rem;opacity:0;pointer-events:none;transition:opacity .3s,transform .3s}
+.scr-tz.on{opacity:1;transform:translate(-50%,0);pointer-events:auto}.scr-tz button{margin-left:6px;padding:4px 12px;border-radius:999px;border:1px solid var(--line);color:#fff;font-size:.8rem}
 .ex{font-size:.84rem;line-height:1.6;color:var(--muted)}.ex b{color:#fff;font-weight:500}.ex .dir{margin-right:6px}
 @media (max-width:700px){.btc-ctl .btn{flex:1 1 100%}.fc{grid-template-columns:repeat(3,1fr)}}
 
@@ -421,6 +424,7 @@ h1 span{display:block;background:linear-gradient(180deg,#fff 0,#8d8d8d 100%);-we
     <button type="button" data-t="crypto" aria-pressed="true"><svg class="ico" aria-hidden="true"><use href="#i-btc"/></svg>Crypto</button>
     <button type="button" data-t="meme">Meme · Pump.fun</button>
     <button type="button" data-t="scr">Screener</button>
+    <button type="button" data-t="lst" data-lst>Listing Baru</button>
     <button type="button" data-t="stock" aria-pressed="false"><svg class="ico" aria-hidden="true"><use href="#i-us"/></svg>Saham AS</button>
   </div>
 
@@ -740,7 +744,7 @@ onSnapshot(query(collection(db,'projects'),orderBy('created','desc')),s=>{projec
       <input class="scr-q" id="scrQ" type="search" enterkeyhint="search" placeholder="Cari semua koin: BTC, PEPE, WIF…" autocomplete="off" autocapitalize="characters" spellcheck="false" list="scrDl" aria-label="Cari koin">
       <datalist id="scrDl"></datalist>
     </div>
-    <div class="scr-meta"><span id="scrMeta">Menganalisis…</span><span class="fng" id="scrFng" hidden></span><button type="button" id="scrRef">Refresh</button></div>
+    <div class="scr-meta"><span id="scrMeta">Menganalisis…</span><span class="fng" id="scrFng" hidden></span><button type="button" id="scrRef">Refresh</button><button type="button" id="scrAl"></button></div>
     <p class="scr-note" id="snNote" hidden style="margin:0 0 16px"><b>Sniper pool baru.</b> Memantau pool baru di DEX (data GeckoTerminal + DexScreener). Skor memakai likuiditas, tekanan beli/jual, volume, momentum, dan umur token, bukan candle. Token baru sangat berisiko (rug pull, honeypot, likuiditas ditarik); <b>LAYAK bukan berarti aman</b>. Cek kontrak, holder, dan likuiditas terkunci sendiri. Entry/SL/TP hanya acuan hitungan, bukan saran investasi.</p>
     <div class="scr-grid" id="scrGrid"></div>
     <p class="scr-note"><b>Cara kerja.</b> Skor Total = 65% Teknikal + 35% Fundamental. <b>Teknikal</b> (candle yang sudah close): EMA 20/50, RSI 14, MACD 12/26/9, ATR 14, volume, breakout/pullback, dan konfirmasi tren timeframe yang lebih besar. <b>Fundamental</b> (data terukur): peringkat &amp; market cap, likuiditas (volume/market cap), risiko dilusi (FDV/market cap), tren 7/30/200 hari, jarak dari ATH, funding rate futures, dan indeks Fear &amp; Greed. Fundamental di sini <b>tidak mencakup</b> berita, aktivitas on-chain, atau jadwal token unlock. <b>Layak Entry (GAS)</b> hanya muncul bila lolos semua filter: skor total ≥ 7, searah tren timeframe besar &amp; BTC, ADX ≥ 18, volume ≥ rata-rata, harga tidak mengejar (jarak EMA20 ≤ 2,2 ATR), RSI tidak ekstrem, tidak ada ekor candle penolak, target ≥ 0,35% (menutup biaya), funding tidak ekstrem, dan harga live belum lari jauh dari Entry. <b>Meme · Pump.fun</b> memakai filter anti-rug: likuiditas ≥ $10 rb, tekanan beli 5 menit &amp; 1 jam, ada transaksi jual (anti-honeypot), belum pump tinggi. Mode <b>Semua Koin</b> menampilkan seluruh pasangan USDT di Binance dengan harga live; tekan <b>Analisa</b> pada koin mana pun untuk cek zona Entry/TP/SL beserta penjelasannya. Semua angka diambil langsung dari Binance, CoinGecko, Binance Futures, dan alternative.me; bila sebuah sumber gagal dimuat, bagian itu ditampilkan kosong, bukan diisi data pengganti. Level Entry, TP, dan SL hanya acuan hitungan, bukan saran investasi atau rekomendasi beli/jual, dan tidak ada jaminan profit. Tentukan sendiri ukuran posisi dan risikomu (DYOR).</p>
@@ -799,7 +803,7 @@ const getJ=async(u,ms=8000)=>{const c=new AbortController(),t=setTimeout(()=>c.a
 const STB=/^(USDC|FDUSD|TUSD|USDP|DAI|BUSD|AEUR|EUR|EURI|USDE|XUSD|USD1|PYUSD|BFUSD|USDS|UST|GBP|TRY|BRL)$/;
 let cl=null,clT=0;
 window.coinList=async()=>{
-  if(cl&&Date.now()-clT<3e5)return cl;
+  if(cl&&Date.now()-clT<4e4)return cl;
   for(const b of BN){try{
     const j=await getJ(b+'ticker/24hr?type=MINI',15000);
     cl=j.filter(x=>x.symbol.endsWith('USDT')&&+x.quoteVolume>5e4).map(x=>({s:x.symbol.slice(0,-4),p:+x.lastPrice,o:+x.openPrice,q:+x.quoteVolume}))
@@ -1085,6 +1089,8 @@ let tf='15m',flt='ok',md='set',res=[],okN=0,isOpen=false,tk=0,timer=null,ws=null
 let store={},fund={},fxs={},fundAllAt=0,lastScan=0,fr={},frAt=0,fng=null,fngAt=0,q='',COINS=[],LIST=[],an={},lim=60,subd=new Set(),dl=0;
 try{const c=JSON.parse(localStorage.getItem('wd_fund2')||'null');if(c){fund=c.f||{};fxs=c.x||{};fundAllAt=c.a||0}}catch(e){}
 const T={},px={},dirty=new Set(),hc={};
+const LS=(k,d)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}};
+const born={},newL=LS('wd_newl',{}),snOk=new Set(),snSeen=new Set();let gasPrev=0,alOn=LS('wd_scal',1)!==0,actx=null,tz=null,tzT=0;
 const M=()=>md;
 const vis=()=>{const m=md,sn=m==='snp';$('scrQ').style.display=m==='all'?'':'none';$('scrFl').style.display=m==='set'?'':'none';$('scrTf').style.display=sn?'none':'';$('scrCh').style.display=sn?'':'none';$('scrSn').style.display=sn?'':'none';$('snNote').hidden=!sn};
 
@@ -1232,6 +1238,20 @@ function fin(a,s){
   a.why=w;a.ok=!w.length;return a}
 const fresh=c=>{const t=stat(c,px[c.s]||c.last);return t.r>-.3&&t.r<=.6&&!/^(SL|TP)/.test(t.t)};
 
+/* ---- alert + koin baru yang muncul otomatis di list ---- */
+function notify(h){
+  if(!tz){tz=document.createElement('div');tz.className='scr-tz';ov.appendChild(tz)}
+  tz.innerHTML=h;tz.classList.add('on');clearTimeout(tzT);tzT=setTimeout(()=>tz.classList.remove('on'),9000);
+  if(alOn)try{actx=actx||new(window.AudioContext||window.webkitAudioContext)();[0,.15].forEach((d,i)=>{const o=actx.createOscillator(),g=actx.createGain();o.frequency.value=i?1100:800;g.gain.value=.08;o.connect(g);g.connect(actx.destination);o.start(actx.currentTime+d);o.stop(actx.currentTime+d+.12)})}catch(e){}}
+function chkNew(l){
+  const cur=l.map(x=>x.s),seen=LS('wd_seen',null);let add=[];
+  Object.keys(newL).forEach(k=>{if(Date.now()-newL[k]>864e5)delete newL[k]});
+  if(seen){const S=new Set(seen);add=l.filter(x=>!S.has(x.s)&&x.q>=2e5);
+    if(add.length&&add.length<=15){add.forEach(x=>newL[x.s]=Date.now());notify('<b>Listing baru:</b> '+add.map(x=>x.s).join(', ')+' <button type="button" data-lst>Sniper Listing</button>')}else add=[]}
+  try{localStorage.setItem('wd_seen',JSON.stringify([...new Set((seen||[]).concat(cur))]));localStorage.setItem('wd_newl',JSON.stringify(newL))}catch(e){}
+  return add.length>0}
+async function watch(){try{const l=await coinList();if(chkNew(l)&&isOpen&&M()==='set')render()}catch(e){}}
+
 /* ---- format ---- */
 const fp=p=>{const d=p>=100?2:p>=1?4:p>=.01?5:8;return '$'+p.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d})};
 const pc=(v,e)=>{const x=(v-e)/e*100;return (x>=0?'+':'')+x.toFixed(2)+'%'};
@@ -1276,8 +1296,8 @@ const bar=(l,v,cl)=>`<div class="sb ${cl||''}"><small>${l}</small><b>${v==null?'
 const icon=c=>{const f=fund&&fund[c.s],u=f&&f.img?f.img:`https://assets.coincap.io/assets/icons/${c.s.toLowerCase()}@2x.png`;
   return `<div class="av" data-l="${c.s[0]}"><img src="${u}" alt="" loading="lazy" referrerpolicy="no-referrer"></div>`};
 const card=c=>{const p=px[c.s]||c.last,st=stat(c,p),tg=c.tags.map(t=>[t,'']).concat(c.ftags.map(t=>[t,'fd'])).slice(0,9);
-  return `<article class="sc" data-s="${c.s}">
-  <div class="sc-h">${icon(c)}<div class="sc-n"><b>${c.s}/USDT</b><small>Timeframe ${tf.replace('h','j')}${fund&&fund[c.s]&&fund[c.s].rank?' · Rank #'+fund[c.s].rank:''}</small></div><span class="dir ${c.dir}">${c.dir}${c.ok?' · GAS':''}</span></div>
+  return `<article class="sc${c.nw?' nw':''}" data-s="${c.s}">
+  <div class="sc-h">${icon(c)}<div class="sc-n"><b>${c.s}/USDT</b><small>Timeframe ${tf.replace('h','j')}${fund&&fund[c.s]&&fund[c.s].rank?' · Rank #'+fund[c.s].rank:''}</small></div><span class="dir ${c.dir}">${c.dir}${c.ok?' · GAS':''}${c.nw?' · BARU':''}</span></div>
   <div class="sbs">${bar('Teknikal',c.tech)}${bar('Fundamental',c.fs)}${bar('Total',c.total,'tot')}</div>
   <div class="vd"><span>Kualitas setup: ${verdict(c.total)}</span><span>Candle live · ${tf.replace('h','j')}</span></div>
   <div class="cc">${candles(c)}</div>
@@ -1310,7 +1330,7 @@ function resHtml(s){const a=an[s];if(!a)return '';
 const btnT=s=>{const a=an[s]||{};return a.busy?'Menganalisa…':(a.c||a.msg||a.err)?'Analisa ulang':'Analisa'};
 function rowHtml(x){
   const t=T[x.s]||x,d=t.o?(t.p-t.o)/t.o*100:0,a=an[x.s]||{};
-  return `<div class="cw" data-s="${x.s}"><div class="sc-h">${icon({s:x.s})}<div class="sc-n"><b>${x.s}/USDT</b><small>Vol 24j ${cp(x.q)}</small></div><div class="cp"><b class="lp2">${fp(t.p)}</b><small class="ch2 ${d>=0?'up':'dn'}">${sgn(d)}</small></div></div>
+  return `<div class="cw${newL[x.s]?' nl':''}" data-s="${x.s}"><div class="sc-h">${icon({s:x.s})}<div class="sc-n"><b>${x.s}/USDT</b><small>Vol 24j ${cp(x.q)}${newL[x.s]?' · LISTING BARU':''}</small></div><div class="cp"><b class="lp2">${fp(t.p)}</b><small class="ch2 ${d>=0?'up':'dn'}">${sgn(d)}</small></div></div>
   <button type="button" class="an"${a.busy?' disabled':''}>${btnT(x.s)}</button><div class="res">${resHtml(x.s)}</div></div>`}
 function upd(s){const el=grid.querySelector(`.cw[data-s="${s}"]`);if(!el)return;
   const b=el.querySelector('.an');b.disabled=!!(an[s]&&an[s].busy);b.textContent=btnT(s);el.querySelector('.res').innerHTML=resHtml(s)}
@@ -1348,7 +1368,8 @@ function render(){
   if(res===null){meta.textContent='Gagal memuat data.';grid.innerHTML='<div class="scr-empty">Data pasar belum bisa dimuat.<br><button type="button" class="retry">Coba lagi</button></div>';return}
   const list=res.filter(c=>flt==='all'||(flt==='ok'?c.ok&&fresh(c):c.dir===flt));
   meta.textContent=`${res.filter(c=>c.ok).length} layak entry · ${res.length} setup dari ${okN} koin · ${tf.replace('h','j')} · diperbarui ${at}`+(Object.keys(fund).length?'':' · fundamental tidak tersedia (skor teknikal saja)');
-  grid.innerHTML=list.length?list.map(card).join(''):`<div class="scr-empty">${flt==='ok'?'Belum ada koin yang lolos semua filter layak entry. Itu normal bila pasar belum memberi setup bersih; coba timeframe lain atau pilih Semua untuk melihat yang hampir lolos.':'Belum ada koin yang kena screener di timeframe ini. Coba timeframe lain.'}</div>`;
+  const nl=Object.keys(newL).map(k=>LIST.find(x=>x.s===k)).filter(Boolean).map(rowHtml).join('');
+  grid.innerHTML=nl+(list.length?list.map(card).join(''):`<div class="scr-empty">${flt==='ok'?'Belum ada koin yang lolos semua filter layak entry. Itu normal bila pasar belum memberi setup bersih; coba timeframe lain atau pilih Semua untuk melihat yang hampir lolos.':'Belum ada koin yang kena screener di timeframe ini. Coba timeframe lain.'}</div>`);
 }
 
 async function runAll(force){
@@ -1369,7 +1390,7 @@ async function run(force){
   const id=++tk,t=tf;
   if(!res||!res.length)$('scrMeta').textContent='Memuat daftar koin…';
   const l=await coinList();if(id!==tk||!isOpen)return;
-  LIST=l;fillDl();COINS=l.length?l.filter(x=>x.q>=1e6).map(x=>x.s).slice(0,500):DEF;
+  LIST=l;fillDl();chkNew(l);COINS=l.length?l.filter(x=>x.q>=1e6).map(x=>x.s).slice(0,500):DEF;
   let n=0;const tot=COINS.length,tick=()=>{if(id===tk&&(!res||!res.length))$('scrMeta').textContent=`Menganalisis ${++n} / ${tot} koin…`};
   const fa=Promise.all([loadFundAll(new Set(COINS)),loadFr(),loadFng()]);
   const ok=[];
@@ -1385,6 +1406,11 @@ async function run(force){
   const bt=await htf('BTC',t);
   res=cand.map(x=>{const a=analyze(x.c,x.cs,x.h,undefined,0,bt);return a&&fin(a,x.c)})
     .filter(c=>c&&c.total>=5.5).sort((a,b)=>b.ok-a.ok||b.total-a.total||b.vr-a.vr).slice(0,80);
+  const cur=new Set(),nn=[];
+  res.forEach(c=>{if(!c.ok)return;const k=c.s+c.dir+t;cur.add(k);if(!(k in born)){born[k]=gasPrev?Date.now():0;if(gasPrev)nn.push(c.s+' '+c.dir)}c.nw=Date.now()-born[k]<6e5});
+  Object.keys(born).forEach(k=>{if(!cur.has(k))delete born[k]});gasPrev=1;
+  res.sort((a,b)=>b.ok-a.ok||(b.nw?1:0)-(a.nw?1:0)||b.total-a.total||b.vr-a.vr);
+  if(nn.length)notify('<b>Layak entry baru:</b> '+nn.slice(0,6).join(', ')+(nn.length>6?' +'+(nn.length-6):''));
   at=clock();lastScan=Date.now();
   render();wsSync();
 }
@@ -1431,7 +1457,7 @@ function openScr(){
   if(window.setMenu)setMenu(false);
   ov.hidden=false;document.body.style.overflow='hidden';
   $('scrX').focus({preventScroll:true});
-  vis();run();timer=setInterval(()=>{if(document.hidden||M()==='snp')return;if(M()==='set'&&Date.now()-lastScan<115e3)return;run()},60000);
+  vis();run();timer=setInterval(()=>{if(document.hidden||M()==='snp')return;watch();if(M()==='set'&&Date.now()-lastScan<115e3)return;run()},60000);
 }
 function closeScr(){
   if(!isOpen)return;isOpen=false;ov.hidden=true;
@@ -1442,6 +1468,8 @@ document.querySelectorAll('[data-scr]').forEach(b=>b.addEventListener('click',op
 $('scrX').onclick=closeScr;
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&isOpen){e.preventDefault();closeScr()}});
 $('scrRef').onclick=()=>run(1);
+const alB=$('scrAl'),alP=()=>{alB.textContent='Alert: '+(alOn?'ON':'OFF')};alP();
+alB.onclick=()=>{alOn=!alOn;try{localStorage.setItem('wd_scal',alOn?1:0)}catch(e){}alP()};
 grid.addEventListener('click',e=>{const t=e.target;
   if(t.closest('.retry'))run(1);
   else if(t.closest('.more')){lim+=60;renderAll()}
@@ -1452,7 +1480,7 @@ function seg(el,fn){el.addEventListener('click',e=>{const b=e.target.closest('bu
   el.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));fn(b.dataset.v)})}
 const mdSync=()=>$('scrMd').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===md));
 function switchMode(){snStop();vis();res=[];grid.innerHTML='';wsStop();run()}
-seg($('scrTf'),v=>{tf=v;const old=Object.keys(an);an={};store={};res=[];grid.innerHTML='';wsStop();
+seg($('scrTf'),v=>{tf=v;gasPrev=0;const old=Object.keys(an);an={};store={};res=[];grid.innerHTML='';wsStop();
   if(M()==='all')old.forEach(s=>{an[s]={busy:1}});
   run(1);if(M()==='all')old.forEach(s=>analyzeCoin(s))});
 seg($('scrMd'),v=>{md=v;switchMode()});
@@ -1590,6 +1618,7 @@ async function snFetch(){
   if(!got.length&&!snp.size){$('scrMeta').textContent='Pool baru belum bisa dimuat (batas request GeckoTerminal?). Coba Refresh sebentar lagi.'}
   got.forEach(x=>{const o=snp.get(x.a);if(!o||Date.now()-(o.ds||0)>3e4)snp.set(x.a,Object.assign({},o,x,{img:x.img||(o&&o.img)||''}))});
   for(const [k,x] of snp)if(Date.now()-x.t0>216e5)snp.delete(k);   /* buang pool > 6 jam */
+  snp.forEach(x=>{if((c!=='sol-pump'||x.dex.startsWith('pump'))&&snScore(x).ok&&!snOk.has(x.a)){snOk.add(x.a);if(snSeen.has(c))notify('<b>Meme layak:</b> '+esc(x.n)+' · '+(x.dex.startsWith('pump')?'Pump.fun':NET[c]))}});snSeen.add(c);
   renderSn(1)}
 async function snPoll(){
   if(M()!=='snp'||document.hidden)return;
@@ -1678,7 +1707,7 @@ function setTab(t){
   if(t==='stock')startSt();else stopSt();
 }
 tabs.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const t=b.dataset.t;
-  if(t==='scr'||t==='meme')return window.scrOpen&&scrOpen(t==='meme'?'snp':'set');setTab(t)});
+  if(t==='scr'||t==='meme')return window.scrOpen&&scrOpen(t==='meme'?'snp':'set');if(t==='crypto'||t==='stock')setTab(t)});
 function openMk(t){
   if(window.setMenu)setMenu(false);
   mk.hidden=false;document.body.style.overflow='hidden';
