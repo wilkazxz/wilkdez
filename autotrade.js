@@ -12,7 +12,7 @@ const NETS=[['solana','Solana · pump.fun'],['base','Base'],['bsc','BSC']];
 let ST=null,isOpen=false,err='',tick=0;
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
-const rp=v=>(v<0?'-':'')+'Rp '+Math.abs(Math.round(v)).toLocaleString('id-ID');
+const rp=v=>(v<0?'-':'')+'Rp '+Math.abs(v).toLocaleString('id-ID',{minimumFractionDigits:2,maximumFractionDigits:2});
 const sr=v=>(v>=0?'+':'')+rp(v),sg=v=>(v>=0?'+':'')+v.toFixed(2)+'%',cl=v=>v>=0?'bt-up':'bt-dn';
 const fpm=p=>!(p>0)?'—':p>=1?'$'+p.toLocaleString('en-US',{maximumFractionDigits:4}):'$'+p.toFixed(Math.min(12,Math.ceil(-Math.log10(p))+3));
 const ago=t=>{const s=Math.max(0,(Date.now()-t)/1e3);return s<60?Math.floor(s)+' dtk':s<3600?Math.floor(s/60)+' mnt':(s/3600).toFixed(1)+' jam'};
@@ -36,7 +36,7 @@ css.textContent=`
 .bt-sw small{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:.78rem;margin-top:2px}
 .bt-dot{width:8px;height:8px;border-radius:50%;background:#888;flex-shrink:0}.bt-dot.on{background:#2ee59d;box-shadow:0 0 0 4px rgba(46,229,157,.18)}.bt-dot.off{background:#ff5c6c}
 .bt-eq{text-align:right}.bt-eq small{display:block;color:var(--muted);font-size:.76rem}
-.bt-eq b{display:block;font-size:clamp(1.4rem,5vw,2rem);font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.bt-eq b{transition:color .5s;display:block;font-size:clamp(1.4rem,5vw,2rem);font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
 .bt-chip{display:inline-block;margin-top:2px;padding:3px 12px;border-radius:999px;font-size:.84rem;font-variant-numeric:tabular-nums;background:rgba(255,255,255,.08)}
 .bt-alert{border:1px solid rgba(255,209,102,.45);background:rgba(255,209,102,.07);color:#ffd166;border-radius:18px;padding:14px 18px;margin:0 0 14px;font-size:.86rem;line-height:1.6}
 .bt-alert b{color:#fff;font-weight:500}.bt-alert code{background:rgba(255,255,255,.1);padding:1px 7px;border-radius:6px;color:#fff;font-size:.8rem}
@@ -119,6 +119,14 @@ document.body.append(root);
 $('btMode').innerHTML=MODES.map(m=>`<button type="button" data-m="${m[0]}">${m[1]}</button>`).join('');
 $('btNets').innerHTML=NETS.map(n=>`<button type="button" data-n="${n[0]}">${n[1]}</button>`).join('');
 
+/* ---------- angka ekuitas bergerak halus ---------- */
+let tgt=null,disp=null,raf=0,flashT=0;
+function renderNum(){const pl=disp-ST.start;$('btEq').textContent=rp(disp);$('btPl').textContent=sr(pl)+' ('+sg(pl/ST.start*100)+')';$('btPl').className='bt-chip '+cl(pl)}
+function frame(){raf=0;if(!isOpen)return;const d=tgt-disp;disp=Math.abs(d)<.005?tgt:disp+d*.12;renderNum();if(disp!==tgt)raf=requestAnimationFrame(frame)}
+function setTgt(v){const prev=tgt==null?v:tgt;tgt=v;if(disp==null)disp=v;
+  if(Math.abs(v-prev)>.004){const e=$('btEq');e.style.color=v>=prev?'#2ee59d':'#ff5c6c';clearTimeout(flashT);flashT=setTimeout(()=>{e.style.color=''},900)}
+  if(Math.abs(v-disp)>.004){if(!raf)raf=requestAnimationFrame(frame)}else{disp=v;renderNum()}}
+
 /* ---------- render ---------- */
 const cfg=()=>ST;
 function av(p){const L=esc((p.sym||'?')[0].toUpperCase()),u=`https://dd.dexscreener.com/ds-data/tokens/${p.ch}/${p.a}.png`;
@@ -130,7 +138,7 @@ function posHtml(p){
   <div class="bt-bar"><i style="left:${at(p.px)}%"></i><s style="left:${at(p.ep)}%"></s><em style="left:0">SL</em><em style="left:${at(p.ep)}%">Entry</em><em style="left:100%">TP</em></div>
   <div class="bt-tiles"><div><small>Entry</small><b>${fpm(p.ep)}</b></div><div><small>Sekarang</small><b>${fpm(p.px)}</b></div><div><small>Stop (trailing)</small><b class="bt-dn">${fpm(p.sl)}</b></div><div><small>Take profit</small><b class="bt-up">${fpm(p.tp)}</b></div></div></article>`}
 function eqSvg(){
-  const d=ST.eq||[];if(d.length<2)return '<p class="bt-hint">Grafik terbentuk seiring waktu (1 titik per menit).</p>';
+  const d=ST.eq||[];if(d.length<2)return '<p class="bt-hint">Grafik terbentuk seiring waktu (1 titik per 10 detik).</p>';
   const W=320,H=120,vs=d.map(x=>x.v).concat(ST.start);let mn=Math.min(...vs),mx=Math.max(...vs);const pd=(mx-mn)*.12||mx*.001;mn-=pd;mx+=pd;
   const t0=d[0].t,sp=d[d.length-1].t-t0||1,X=t=>(t-t0)/sp*W,Y=v=>H-(v-mn)/(mx-mn)*H,up=d[d.length-1].v>=ST.start,c=up?'#2ee59d':'#ff5c6c';
   const ln=d.map((p,i)=>(i?'L':'M')+X(p.t).toFixed(1)+' '+Y(p.v).toFixed(1)).join('');
@@ -147,7 +155,7 @@ function paint(){
   $('btNets').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',c.nets.includes(b.dataset.n)));
   if(!ST){$('btStats').innerHTML='';$('btPos').innerHTML='<div class="bt-empty">Menunggu data dari server…</div>';return}
   const eq=ST.eqNow||ST.cash,pl=eq-ST.start,np=Object.keys(ST.pos||{}).length,wr=ST.n?Math.round(ST.w/ST.n*100)+'%':'—',day=eq-(ST.dayEq||ST.start);
-  $('btEq').textContent=rp(eq);$('btPl').textContent=sr(pl)+' ('+sg(pl/ST.start*100)+')';$('btPl').className='bt-chip '+cl(pl);
+  setTgt(eq);
   $('btStats').innerHTML=[['PnL total',sr(pl),cl(pl)],['PnL hari ini',sr(day),cl(day)],['PnL terealisasi',ST.n?sr(ST.rl):'—',ST.n?cl(ST.rl):''],['Win rate',wr+(ST.n?` (${ST.w}/${ST.n})`:''),''],['Posisi aktif',np+' / '+MAXPOS,''],['Saldo tunai',rp(ST.cash),'']]
     .map(s=>`<div class="bt-st"><small>${s[0]}</small><b class="${s[2]}">${s[1]}</b></div>`).join('');
   const ps=Object.values(ST.pos||{}).sort((a,b)=>b.t-a.t);$('btNp').textContent=np?np+' posisi':'';
@@ -267,15 +275,15 @@ async function loop(){
   busy=1;const t=Date.now();let e='';
   try{
     const d=new Date().toDateString();if(ST.day!==d){ST.day=d;ST.dayEq=equity()}
-    if(Object.keys(ST.pos).length&&t-lastPx>=15000){lastPx=t;try{await updatePrices()}catch(x){e=x.message||String(x)}}
+    if(Object.keys(ST.pos).length&&t-lastPx>=4000){lastPx=t;try{await updatePrices()}catch(x){e=x.message||String(x)}}
     if(ST.on&&t-lastScan>=60000){lastScan=t;try{await scan()}catch(x){e=x.message||String(x)}}
     err=e;
     if(ST.on&&equity()<=ST.dayEq*.9){ST.on=0;ev('Rugi harian 10% tercapai: Auto Trade dimatikan otomatis')}
   }finally{
     ST.ts=Date.now();ST.eqNow=equity();
-    if(ST.ts-lastEq>=60000){lastEq=ST.ts;ST.eq.push({t:ST.ts,v:ST.eqNow});if(ST.eq.length>720)ST.eq.shift()}
+    if(ST.ts-lastEq>=10000){lastEq=ST.ts;ST.eq.push({t:ST.ts,v:ST.eqNow});if(ST.eq.length>1080)ST.eq.shift()}
     save();busy=0;if(isOpen)paint()}}
-setInterval(loop,5000);
+setInterval(loop,2000);
 window.addEventListener('storage',e=>{if(e.key===KEY&&!busy){ST=load();if(isOpen)paint()}});   /* sinkron antar tab */
 function send(o){
   if('on' in o){ev(o.on?'Auto Trade <b>ON</b>':'Auto Trade <b>OFF</b>');
@@ -296,7 +304,7 @@ root.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)retur
 
 /* ---------- buka / tutup ---------- */
 let prevOv='';
-function open(){if(isOpen)return;isOpen=true;if(window.setMenu)window.setMenu(false);root.hidden=false;prevOv=document.body.style.overflow;document.body.style.overflow='hidden';paint();loop();tick=setInterval(()=>{if(!document.hidden)paint()},1000)}
+function open(){if(isOpen)return;isOpen=true;if(window.setMenu)window.setMenu(false);root.hidden=false;prevOv=document.body.style.overflow;document.body.style.overflow='hidden';paint();loop();tick=setInterval(()=>{if(!document.hidden)paint()},700)}
 function close(){if(!isOpen)return;isOpen=false;root.hidden=true;document.body.style.overflow=prevOv;clearInterval(tick)}   /* tutup panel: bot tetap jalan di latar selama halaman terbuka */
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&isOpen)close()});
 
