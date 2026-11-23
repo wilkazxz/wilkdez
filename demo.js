@@ -28,17 +28,18 @@ const fresh=s=>({cash:s,start:s,pos:{},hist:[],rl:0,w:0,n:0,eqh:[]});
 let A;try{A=JSON.parse(localStorage.getItem(KEY));if(!A||!A.pos)A=null}catch(e){A=null}
 if(!A)A=fresh(10000000);
 if(!Array.isArray(A.eqh))A.eqh=[];
-const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(A))}catch(e){}};
-let fx=0,fxAt=0,solUsd=0,cur=null,isOpen=false,entryOpen=false;
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(A));localStorage.setItem('wd_fx',fx)}catch(e){}};
+const FX0=16500;   /* kurs cadangan bila Binance USDT/IDR tidak bisa dijangkau; diganti kurs live begitu tersedia */
+let fx=0;try{fx=+localStorage.getItem('wd_fx')||0}catch(e){}if(!(fx>0))fx=FX0;
+let fxAt=0,solUsd=0,cur=null,isOpen=false,entryOpen=false;
 const P={},H={},st={bn:0,pump:0,dex:0};
 const fee=id=>FEE[id[0]],stale=id=>!P[id]||Date.now()-P[id].t>(id[0]==='c'?45e3:3e4);
 const pidr=id=>P[id]&&fx?P[id].u*fx:null;
 /* tanpa slippage: fill selalu di harga live. Untuk token DEX, tetap null bila likuiditas tidak diketahui (entry diblokir) */
-function imp(id,v){if(id[0]==='c')return 0;const R=(P[id]&&P[id].R||0)*fx;return R>0?0:null}
+function imp(){return 0}
 /* nilai posisi. mk=true: harga pasar (tanpa biaya keluar) untuk tampilan live; mk=false: nilai bersih saat ditutup (fee + slippage) */
-function net(q,qty,mk){const p=pidr(q.id);if(p==null)return null;const i=mk?0:imp(q.id,qty*p);if(i==null)return null;const f=mk?0:fee(q.id);
-  if(q.side==='S'){const pe=p*(1+i);return Math.max(0,qty*q.ep+qty*(q.ep-pe)-f*qty*pe)}
-  return qty*p*(1-i)*(1-f)}
+const val=(q,qty,p,f)=>q.side==='S'?Math.max(0,qty*q.ep+qty*(q.ep-p)-f*qty*p):qty*p*(1-f);
+function net(q,qty,mk){const p=pidr(q.id);return p==null?null:val(q,qty,p,mk?0:fee(q.id))}
 function equity(){let e=A.cash;Object.values(A.pos).forEach(q=>{const v=net(q,q.qty,1);e+=v==null?q.cost:v});return e}
 function floating(){let f=0;Object.values(A.pos).forEach(q=>{const v=net(q,q.qty,1);if(v!=null)f+=v-q.cost});return f}
 
@@ -62,7 +63,7 @@ const hue=n=>{let h=0;for(const c of String(n))h=(h*31+c.charCodeAt(0))%360;retu
 const avBg=n=>{const h=hue(n);return `background:linear-gradient(135deg,hsl(${h} 55% 40%),hsl(${(h+45)%360} 55% 18%))`};
 const ONERR="var q=[];try{q=JSON.parse(this.dataset.q||'[]')}catch(e){}var n=q.shift();if(n){this.dataset.q=JSON.stringify(q);this.src=n}else this.remove()";
 const iconHtml=o=>{const L=esc(String(o.sym||'?')[0].toUpperCase()),s=iconSrcs(o);
-  return `<span class="av dmav" data-sym="${esc(o.sym)}" data-k="${o.kind}" style="${avBg(o.sym)}"><span class="lt">${L}</span>${s.length?`<img class="dmi" src="${esc(s[0])}" data-q="${esc(JSON.stringify(s.slice(1)))}" alt="" referrerpolicy="no-referrer" onload="this.classList.add('ok')" onerror="${ONERR}">`:''}</span>`};
+  return `<span class="av dmav" data-sym="${esc(o.sym)}" data-k="${o.kind}" data-ch="${esc(o.chain||'')}" data-tok="${esc(o.addr||'')}" style="${avBg(o.sym)}"><span class="lt">${L}</span>${s.length?`<img class="dmi" src="${esc(s[0])}" data-q="${esc(JSON.stringify(s.slice(1)))}" alt="" referrerpolicy="no-referrer" onload="this.classList.add('ok')" onerror="${ONERR}">`:''}</span>`};
 /* koin yang belum punya ikon: ambil gambar resmi dari CoinGecko sekali, simpan di browser */
 const icTry=new Set();
 async function ensureIcon(o){
@@ -114,7 +115,7 @@ function calcOpen(a,amt){
   amt=Math.min(amt,A.cash);if(amt<MIN)return{e:A.cash<MIN?'Saldo kurang dari Rp 10.000':'Minimal Rp 10.000'};
   const f=amt*fee(id),n=amt-f,i=imp(id,n);if(i==null)return{e:'Likuiditas tidak diketahui'};
   const fill=a.side==='S'?p*(1-i):p*(1+i);return{amt,f,n,i,fill,fillU:pp.u*(fill/p),qty:n/fill}}
-function log(s,q,qty,priceU,v,f,pnl,w){A.hist.unshift({t:Date.now(),s,sym:q.sym,qty,p:priceU,v,f,pnl,w,bal:A.cash});if(A.hist.length>200)A.hist.length=200}
+function log(s,q,qty,priceU,v,f,pnl,w){A.hist.unshift({t:Date.now(),s,sym:q.sym,qty,p:priceU,v,f,pnl,w,bal:A.cash,b:q.auto?1:0});if(A.hist.length>200)A.hist.length=200}
 function openPos(a,amt){
   const er=lvlErr(a);if(er)return say(er,'dn');const c=calcOpen(a,amt);if(c.e)return say(c.e,'dn');
   const ex=A.pos[a.id];if(ex&&ex.side!==a.side)return say('Tutup dulu posisi '+(ex.side==='L'?'LONG':'SHORT')+' '+a.sym,'dn');
@@ -123,20 +124,19 @@ function openPos(a,amt){
   if(a.img)q.img=a.img;
   const tq=q.qty+c.qty;q.ep=(q.ep*q.qty+c.fill*c.qty)/tq;q.eu=(q.eu*q.qty+c.fillU*c.qty)/tq;q.qty=tq;q.cost+=c.amt;
   /* SL/TP SELALU dari kartu screener, bukan input user */
-  q.sl=a.sl;q.t1=a.t1;q.t2=a.t2;q.se=a.e;
-  log(a.side==='L'?'LONG':'SHORT',q,c.qty,c.fillU,c.amt,c.f,0,'screener');save();sync();seedHist(q);
-  say(`${a.side==='L'?'LONG':'SHORT'} ${a.sym} ${rp(c.amt)} @ ${usd(c.fillU)} · SL/TP otomatis dari screener`,'up');sched(1)}
+  q.sl=a.sl;q.t1=a.t1;q.t2=a.t2;q.se=a.e;if(a.auto)q.auto=1;
+  log(a.side==='L'?'LONG':'SHORT',q,c.qty,c.fillU,c.amt,c.f,0,a.src||'screener');save();if(!pollT)start();sync();seedHist(q);
+  say(`${a.side==='L'?'LONG':'SHORT'} ${a.sym} ${rp(c.amt)} @ ${usd(c.fillU)} · SL/TP otomatis`,'up');sched(1);return true}
 function closePos(id,frac,why){
-  const q=A.pos[id];if(!q)return;const p=pidr(id);if(p==null){if(!why||why==='manual')say('Harga belum tersedia','dn');return}
-  const qty=frac>=.999?q.qty:q.qty*frac,v=qty*p,i=imp(id,v);if(i==null)return;
-  const got=net(q,qty),pe=q.side==='S'?p*(1+i):p*(1-i),cp=q.cost*(qty/q.qty),pnl=got-cp;
+  const q=A.pos[id];if(!q)return;
+  const u=(P[id]&&P[id].u)||q.eu,p=u*fx;   /* harga terakhir yang diketahui; feed mati/token hilang -> harga entry, posisi tetap bisa ditutup */
+  const qty=frac>=.999?q.qty:q.qty*frac,f=fee(id),got=val(q,qty,p,f),cp=q.cost*(qty/q.qty),pnl=got-cp;
   A.cash+=got;A.rl+=pnl;A.n++;if(pnl>0)A.w++;q.qty-=qty;q.cost-=cp;
-  log(q.side==='L'?'JUAL':'COVER',q,qty,P[id].u*(pe/p),got,fee(id)*qty*pe,pnl,why||'manual');
-  const done=frac>=.999||q.qty<=1e-12;
-  if(done){delete A.pos[id];delete H[id]}
+  log(q.side==='L'?'JUAL':'COVER',q,qty,u,got,f*qty*p,pnl,why||'manual');
+  if(frac>=.999||q.qty<=1e-12){delete A.pos[id];delete H[id]}
   save();sync();
   const auto=why&&why!=='manual';
-  say(`${auto?why+' kena, posisi selesai: ':'Tutup '}${q.sym} ${rp(got)} (${pnl>=0?'+':''}${rp(pnl)})`,pnl>=0?'up':'dn');sched(1)}
+  say(`${auto?why+' kena, posisi selesai: ':'Tutup '}${q.sym} ${rp(got)} (${pnl>=0?'+':''}${rp(pnl)})`,pnl>=0?'up':'dn');sched(1);idle()}
 
 /* ---------- koneksi: Binance WS ---------- */
 let bw=null,bwI=0,bwD=1000,bwT=0,bwCur=new Set(),pw=null,pwD=1000,pwT=0,pwCur=new Set(),pollT=0,fxT=0,hbT=0,cpB=0;
@@ -372,7 +372,7 @@ root.innerHTML=`<div class="scr-in">
    <div class="dm-c"><small>PnL terealisasi</small><b id="dmRl">—</b></div>
    <div class="dm-c"><small>Win rate</small><b id="dmWr">—</b></div>
   </div>
-  <div><div class="dm-hd"><h3 class="dm-h3">Posisi terbuka</h3><small id="dmNp"></small></div><div class="dm-list" id="dmPos"></div></div>
+  <div><div class="dm-hd"><h3 class="dm-h3">Posisi terbuka</h3><small id="dmNp"></small><button class="dm-b s dm-sell" id="dmAll" type="button" hidden>Tutup semua</button></div><div class="dm-list" id="dmPos"></div></div>
  </div>
  <div class="dm-col r1">
   <div class="dm-card"><div class="dm-hd"><h3 class="dm-h3">Grafik ekuitas</h3><small id="dmEqN"></small></div><div class="dm-eqc" id="dmEqc"></div></div>
@@ -465,7 +465,7 @@ function paintAcct(){
   E.dmRunP.className='dm-chip '+colCls(pl);
   if(lastEq!=null&&Math.abs(eq-lastEq)>=.5){flash(E.dmEq,eq>lastEq);flash(E.dmPl,eq>lastEq);flash(E.dmRunV,eq>lastEq)}
   lastEq=eq;
-  setT(E.dmNp,np?np+' posisi':'');
+  setT(E.dmNp,np?np+' posisi':'');E.dmAll.hidden=np<1;
   E.dmEqc.innerHTML=eqSvg();setT(E.dmEqN,A.eqh.length>1?'Saldo awal '+rp(A.start):'');
   const a=Object.values(A.pos),sig=a.map(q=>[q.id,q.qty,q.sl,q.t1,q.t2,q.eu].join(':')).join('|');
   if(sig!==posSig){posSig=sig;
@@ -486,7 +486,7 @@ function paintAcct(){
     const d=t=>new Date(t).toLocaleString('id-ID',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
     E.dmHist.innerHTML=A.hist.length?A.hist.slice(0,40).map(h=>{const cl=h.s==='JUAL'||h.s==='COVER',s=h.s==='LONG'?'L':h.s==='SHORT'?'S':'';
       return `<div class="dm-hr2"><div><b><span class="dm-tag ${s}">${esc(h.s)}</span>${esc(h.sym)}</b><small>${d(h.t)} · ${esc(h.w)} · ${usd(h.p)}</small></div><div class="r"><b class="${cl?colCls(h.pnl):''}">${cl?sr(h.pnl):rp(h.v)}</b><small>${cl?'nilai '+rp(h.v):'modal'}</small></div></div>`}).join(''):'<p class="dm-nd">Belum ada transaksi.</p>'}
-  E.dmSt.innerHTML=`<span><i class="${st.bn?'on':''}"></i>Binance WS</span><span><i class="${st.pump?'on':''}"></i>PumpPortal WS</span><span><i class="${st.dex?'on':''}"></i>DexScreener</span><span>Kurs USDT/IDR ${fx?'Rp '+nf(fx,{maximumFractionDigits:0}):'…'}</span>`}
+  E.dmSt.innerHTML=`<span><i class="${st.bn?'on':''}"></i>Binance WS</span><span><i class="${st.pump?'on':''}"></i>PumpPortal WS</span><span><i class="${st.dex?'on':''}"></i>DexScreener</span><span>Kurs USDT/IDR ${fxAt?'':'≈ '}Rp ${nf(fx,{maximumFractionDigits:0})}</span>`}
 
 /* tombol "Akun Demo" di bar screener: selalu menampilkan ekuitas & PnL live */
 let bt=[];
@@ -509,6 +509,7 @@ function openEntry(a){
 function closeEntry(){entryOpen=false;em.hidden=true;cur=null;sync();idle()}
 root.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)return;
   if(t.id==='dmX')return closeP();
+  if(t.id==='dmAll'){if(confirm('Tutup semua posisi terbuka di harga live?'))Object.keys(A.pos).forEach(id=>closePos(id,1,'manual'));return}
   if(t.id==='dmReset'){if(confirm('Reset akun demo? Semua posisi dan riwayat dihapus.')){const s=+E.dmStart.value||10000000;A=fresh(s);Object.keys(H).forEach(k=>delete H[k]);save();posSig='';histSig='';lastEq=null;sync();say('Akun direset: '+rp(s),'up');sched(1)}return}
   const pos=t.closest('[data-id]');if(t.dataset.cl&&pos)closePos(pos.dataset.id,+t.dataset.cl)});
 em.addEventListener('click',e=>{if(e.target===em)return closeEntry();const t=e.target.closest('button');if(!t)return;
@@ -540,6 +541,7 @@ const mt=document.getElementById('mkTabs');   /* tombol Akun Demo: di tab panel 
 badge();
 if(Object.keys(A.pos).length)start();   /* posisi terbuka: TP/SL tetap dipantau selama halaman terbuka */
 addEventListener('pagehide',save);
-window.WDDemo={open:openP,close:closeP};
+window.WDDemo={open:openP,close:closeP,isOpen:()=>isOpen,
+  bot:{A:()=>A,equity,say,buy:(a,amt,pu,liq)=>{tick(a.id,pu,{R:liq/2,src:'dex'});return openPos(a,amt)},close:(id,why)=>closePos(id,1,why)}};
 if(window.WD_DEMO_TEST)window.WDDemo._t={openPos,closePos,tick,A:()=>A,setFx:v=>{fx=v;fxAt=Date.now()},setSol:v=>{solUsd=v},calcOpen,net,equity,openEntry:a=>{cur=a},P};
 })();
