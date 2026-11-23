@@ -316,8 +316,8 @@ h1 span{display:block;background:linear-gradient(180deg,#fff 0,#8d8d8d 100%);-we
 
 /* ===== PANEL MARKET (isi tombol Crypto / Saham AS) ===== */
 .mk .btc{padding:22px 0 0;max-width:none}
-.mk-tabs.seg{display:flex;width:100%;max-width:360px;margin-top:4px}
-.mk-tabs button{flex:1;display:flex;align-items:center;justify-content:center;gap:8px}
+.mk-tabs.seg{display:flex;width:100%;max-width:560px;margin-top:4px;overflow-x:auto;scrollbar-width:none}
+.mk-tabs button{flex:1 0 auto;white-space:nowrap;display:flex;align-items:center;justify-content:center;gap:8px}
 .btc[hidden]{display:none}
 .st-msg{position:absolute;inset:0;display:none;align-items:center;justify-content:center;text-align:center;padding:16px;color:var(--muted);font-size:.9rem;pointer-events:none}
 .btc-chart.empty .st-msg{display:flex}
@@ -352,14 +352,6 @@ h1 span{display:block;background:linear-gradient(180deg,#fff 0,#8d8d8d 100%);-we
         </div>
       </div>
       <button type="button" class="mb" data-mk="crypto"><svg class="ico" aria-hidden="true"><use href="#i-btc"/></svg>Crypto</button>
-      <button type="button" class="mb" data-mk="stock"><svg class="ico" aria-hidden="true"><use href="#i-us"/></svg>Saham AS</button>
-      <div class="dd">
-        <button type="button" aria-haspopup="true" aria-expanded="false">Screener
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4l4 4 4-4"/></svg></button>
-        <div class="dd-list">
-          <button type="button" data-scr>Screener Crypto</button><button type="button" data-sscr>Screener Saham AS</button>
-        </div>
-      </div>
       <a href="#gallery">Gallery</a>
       <a href="#about">About</a>
       <a href="#services">Services</a>
@@ -382,7 +374,6 @@ h1 span{display:block;background:linear-gradient(180deg,#fff 0,#8d8d8d 100%);-we
         <a class="btn btn-solid" href="#projects">Explore Projects
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 8h12M9 3l5 5-5 5"/></svg></a>
         <button class="btn btn-ghost mkb" type="button" data-mk="crypto"><svg class="ico" aria-hidden="true"><use href="#i-btc"/></svg>Crypto</button>
-        <button class="btn btn-ghost mkb" type="button" data-mk="stock"><svg class="ico" aria-hidden="true"><use href="#i-us"/></svg>Saham AS</button>
         <a class="btn btn-ghost" href="#about">Learn More
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 2l7 5-7 5z"/></svg></a>
       </div>
@@ -422,12 +413,14 @@ h1 span{display:block;background:linear-gradient(180deg,#fff 0,#8d8d8d 100%);-we
   <div class="scr-top">
     <div>
       <p class="btc-tag"><i class="live"></i>Market</p>
-      <h2>Crypto &amp; Saham AS</h2>
+      <h2>Crypto · Meme · Saham AS</h2>
     </div>
     <button class="scr-x" id="mkX" type="button" aria-label="Tutup">×</button>
   </div>
   <div class="seg mk-tabs" id="mkTabs" role="group" aria-label="Pilih pasar">
     <button type="button" data-t="crypto" aria-pressed="true"><svg class="ico" aria-hidden="true"><use href="#i-btc"/></svg>Crypto</button>
+    <button type="button" data-t="meme">Meme · Pump.fun</button>
+    <button type="button" data-t="scr">Screener</button>
     <button type="button" data-t="stock" aria-pressed="false"><svg class="ico" aria-hidden="true"><use href="#i-us"/></svg>Saham AS</button>
   </div>
 
@@ -724,9 +717,9 @@ onSnapshot(query(collection(db,'projects'),orderBy('created','desc')),s=>{projec
         <button type="button" data-v="4h" aria-pressed="false">4j</button>
       </div>
       <div class="seg" id="scrMd" role="group" aria-label="Tampilan">
-        <button type="button" data-v="set" aria-pressed="true">Screener</button>
+        <button type="button" data-v="set" aria-pressed="true">Crypto</button>
         <button type="button" data-v="all" aria-pressed="false">Cari &amp; Analisa</button>
-        <button type="button" data-v="snp" aria-pressed="false">Sniper</button>
+        <button type="button" data-v="snp" aria-pressed="false">Meme · Pump.fun</button>
       </div>
       <div class="seg" id="scrCh" role="group" aria-label="Chain" style="display:none">
         <button type="button" data-v="sol-pump" aria-pressed="true">SOL · Pump.fun</button>
@@ -739,7 +732,8 @@ onSnapshot(query(collection(db,'projects'),orderBy('created','desc')),s=>{projec
         <button type="button" data-v="ok" aria-pressed="false">Layak</button>
       </div>
       <div class="seg" id="scrFl" role="group" aria-label="Arah">
-        <button type="button" data-v="all" aria-pressed="true">Semua</button>
+        <button type="button" data-v="ok" aria-pressed="true">Layak Entry</button>
+        <button type="button" data-v="all" aria-pressed="false">Semua</button>
         <button type="button" data-v="LONG" aria-pressed="false">Long</button>
         <button type="button" data-v="SHORT" aria-pressed="false">Short</button>
       </div>
@@ -749,7 +743,7 @@ onSnapshot(query(collection(db,'projects'),orderBy('created','desc')),s=>{projec
     <div class="scr-meta"><span id="scrMeta">Menganalisis…</span><span class="fng" id="scrFng" hidden></span><button type="button" id="scrRef">Refresh</button></div>
     <p class="scr-note" id="snNote" hidden style="margin:0 0 16px"><b>Sniper pool baru.</b> Memantau pool baru di DEX (data GeckoTerminal + DexScreener). Skor memakai likuiditas, tekanan beli/jual, volume, momentum, dan umur token, bukan candle. Token baru sangat berisiko (rug pull, honeypot, likuiditas ditarik); <b>LAYAK bukan berarti aman</b>. Cek kontrak, holder, dan likuiditas terkunci sendiri. Entry/SL/TP hanya acuan hitungan, bukan saran investasi.</p>
     <div class="scr-grid" id="scrGrid"></div>
-    <p class="scr-note"><b>Cara kerja.</b> Skor Total = 65% Teknikal + 35% Fundamental. <b>Teknikal</b> (candle yang sudah close): EMA 20/50, RSI 14, MACD 12/26/9, ATR 14, volume, breakout/pullback, dan konfirmasi tren timeframe yang lebih besar. <b>Fundamental</b> (data terukur): peringkat &amp; market cap, likuiditas (volume/market cap), risiko dilusi (FDV/market cap), tren 7/30/200 hari, jarak dari ATH, funding rate futures, dan indeks Fear &amp; Greed. Fundamental di sini <b>tidak mencakup</b> berita, aktivitas on-chain, atau jadwal token unlock. Mode <b>Semua Koin</b> menampilkan seluruh pasangan USDT di Binance dengan harga live; tekan <b>Analisa</b> pada koin mana pun untuk cek zona Entry/TP/SL beserta penjelasannya. Semua angka diambil langsung dari Binance, CoinGecko, Binance Futures, dan alternative.me; bila sebuah sumber gagal dimuat, bagian itu ditampilkan kosong, bukan diisi data pengganti. Level Entry, TP, dan SL hanya acuan hitungan, bukan saran investasi atau rekomendasi beli/jual, dan tidak ada jaminan profit. Tentukan sendiri ukuran posisi dan risikomu (DYOR).</p>
+    <p class="scr-note"><b>Cara kerja.</b> Skor Total = 65% Teknikal + 35% Fundamental. <b>Teknikal</b> (candle yang sudah close): EMA 20/50, RSI 14, MACD 12/26/9, ATR 14, volume, breakout/pullback, dan konfirmasi tren timeframe yang lebih besar. <b>Fundamental</b> (data terukur): peringkat &amp; market cap, likuiditas (volume/market cap), risiko dilusi (FDV/market cap), tren 7/30/200 hari, jarak dari ATH, funding rate futures, dan indeks Fear &amp; Greed. Fundamental di sini <b>tidak mencakup</b> berita, aktivitas on-chain, atau jadwal token unlock. <b>Layak Entry (GAS)</b> hanya muncul bila lolos semua filter: skor total ≥ 7, searah tren timeframe besar &amp; BTC, ADX ≥ 18, volume ≥ rata-rata, harga tidak mengejar (jarak EMA20 ≤ 2,2 ATR), RSI tidak ekstrem, tidak ada ekor candle penolak, target ≥ 0,35% (menutup biaya), funding tidak ekstrem, dan harga live belum lari jauh dari Entry. <b>Meme · Pump.fun</b> memakai filter anti-rug: likuiditas ≥ $10 rb, tekanan beli 5 menit &amp; 1 jam, ada transaksi jual (anti-honeypot), belum pump tinggi. Mode <b>Semua Koin</b> menampilkan seluruh pasangan USDT di Binance dengan harga live; tekan <b>Analisa</b> pada koin mana pun untuk cek zona Entry/TP/SL beserta penjelasannya. Semua angka diambil langsung dari Binance, CoinGecko, Binance Futures, dan alternative.me; bila sebuah sumber gagal dimuat, bagian itu ditampilkan kosong, bukan diisi data pengganti. Level Entry, TP, dan SL hanya acuan hitungan, bukan saran investasi atau rekomendasi beli/jual, dan tidak ada jaminan profit. Tentukan sendiri ukuran posisi dan risikomu (DYOR).</p>
   </div>
 </div>
 
@@ -1087,7 +1081,7 @@ const PERP=s=>fr[s+'USDT']!=null?s+'USDT':fr['1000'+s+'USDT']!=null?'1000'+s+'US
 const BN=['https://data-api.binance.vision/api/v3/','https://api.binance.com/api/v3/'];
 const WSH=['wss://stream.binance.com:9443/stream?streams=','wss://data-stream.binance.vision/stream?streams='];
 const HT={'1m':'15m','5m':'1h','15m':'1h','1h':'4h','4h':'1d'}, HL={'15m':'15m','1h':'1j','4h':'4j','1d':'1H'};
-let tf='15m',flt='all',md='set',res=[],okN=0,isOpen=false,tk=0,timer=null,ws=null,wsOn=false,wsHost=0,wsDelay=1000,hostI=0,raf=0,rd=0,at='';
+let tf='15m',flt='ok',md='set',res=[],okN=0,isOpen=false,tk=0,timer=null,ws=null,wsOn=false,wsHost=0,wsDelay=1000,hostI=0,raf=0,rd=0,at='';
 let store={},fund={},fxs={},fundAllAt=0,lastScan=0,fr={},frAt=0,fng=null,fngAt=0,q='',COINS=[],LIST=[],an={},lim=60,subd=new Set(),dl=0;
 try{const c=JSON.parse(localStorage.getItem('wd_fund2')||'null');if(c){fund=c.f||{};fxs=c.x||{};fundAllAt=c.a||0}}catch(e){}
 const T={},px={},dirty=new Set(),hc={};
@@ -1145,6 +1139,11 @@ function rsi(c,n=14){let g=0,l=0;for(let i=1;i<=n;i++){const d=c[i]-c[i-1];d>=0?
 function atr(cs,n=14){const tr=cs.map((x,i)=>i?Math.max(x.h-x.l,Math.abs(x.h-cs[i-1].c),Math.abs(x.l-cs[i-1].c)):x.h-x.l);
   let a=tr.slice(1,n+1).reduce((p,q)=>p+q,0)/n;for(let i=n+1;i<tr.length;i++)a=(a*(n-1)+tr[i])/n;return a}
 
+function adx(cs,n=14){let tr=0,p=0,m=0,ds=[];
+  for(let i=1;i<cs.length;i++){const u=cs[i].h-cs[i-1].h,d=cs[i-1].l-cs[i].l,t=Math.max(cs[i].h-cs[i].l,Math.abs(cs[i].h-cs[i-1].c),Math.abs(cs[i].l-cs[i-1].c)),P=u>d&&u>0?u:0,M=d>u&&d>0?d:0;
+    if(i<=n){tr+=t;p+=P;m+=M}else{tr+=t-tr/n;p+=P-p/n;m+=M-m/n}
+    if(i>=n){const a=100*p/tr,b=100*m/tr;ds.push(a+b?100*Math.abs(a-b)/(a+b):0)}}
+  if(ds.length<n)return 0;let a=ds.slice(0,n).reduce((x,y)=>x+y,0)/n;for(let i=n;i<ds.length;i++)a=(a*(n-1)+ds[i])/n;return a}
 /* tren timeframe lebih besar: 1 naik, -1 turun, 0 sideways */
 async function htf(s,t){
   const iv=HT[t],k=s+iv,now=Date.now();
@@ -1156,7 +1155,7 @@ async function htf(s,t){
 }
 
 /* ---- analisa teknikal (candle terakhir yang sudah close). hlabel = nama timeframe besar untuk label tag ---- */
-function analyze(s,all,ht,hlabel,force){
+function analyze(s,all,ht,hlabel,force,bt){
   const cs=all.slice(0,-1);if(cs.length<60)return null;
   const c=cs.map(x=>x.c),n=c.length-1,e20=ema(c,20),e50=ema(c,50),r=rsi(c),a=atr(cs),entry=c[n];
   if(!(a>0))return null;
@@ -1180,6 +1179,8 @@ function analyze(s,all,ht,hlabel,force){
   if(entry<ll){S.s+=2;S.t.push('Breakdown 20')}else if(entry<e20[n]&&Math.abs(cs[n].h-e20[n])<=.6*a){S.s+=1.5;S.t.push('Pullback EMA20')}
   if(vr>=1.5){S.s+=1.5;S.t.push(vt)}else if(vr>=1.2){S.s+=.75;S.t.push(vt)}
   if(ht===-1){S.s+=2;S.t.push(hl)}else if(ht===1)S.s-=2;
+  const ad=adx(cs),ax=ad>=25?1.5:ad>=18?.75:ad<15?-1.5:0;L.s+=ax;S.s+=ax;if(ax>0){L.t.push('ADX '+ad.toFixed(0));S.t.push('ADX '+ad.toFixed(0))}
+  if(bt&&s!=='BTC'){if(bt===1)S.s-=1.5;else L.s-=1.5}
   const long=L.s>=S.s,b=long?L:S;
   if(b.s<6)return force?{none:1,sc:b.s,cond:`harga ${entry>e50[n]?'di atas':'di bawah'} EMA50, RSI ${r.toFixed(0)}, volume ${vr.toFixed(1)}x rata-rata, tren TF besar ${ht===1?'naik':ht===-1?'turun':'sideways'}`}:null;
   /* level: SL di bawah/atas swing 8 candle atau min 1 ATR (maks 3 ATR); TP = 1.5R dan 2.5R */
@@ -1187,8 +1188,9 @@ function analyze(s,all,ht,hlabel,force){
   if(long){sl=Math.min(Math.min(...rec.map(x=>x.l))-.2*a,entry-a);if(entry-sl>3*a)sl=entry-3*a;risk=entry-sl}
   else{sl=Math.max(Math.max(...rec.map(x=>x.h))+.2*a,entry+a);if(sl-entry>3*a)sl=entry+3*a;risk=sl-entry}
   const d=long?1:-1;
-  return{s,dir:long?'LONG':'SHORT',tech:Math.max(0,Math.min(10,b.s/12*10)),vr,entry,sl,
-    tp1:entry+d*1.5*risk,tp2:entry+d*2.5*risk,risk,tags:b.t,last:all[all.length-1].c};
+  return{s,dir:long?'LONG':'SHORT',tech:Math.max(0,Math.min(10,b.s/13.5*10)),vr,entry,sl,
+    tp1:entry+d*1.5*risk,tp2:entry+d*2.5*risk,risk,tags:b.t,last:all[all.length-1].c,tp1p:1.5*risk/entry*100,
+    x:{ht,bt:s==='BTC'?0:bt||0,rsi:r,adx:ad,vr,ext:Math.abs(entry-e20[n])/a,wk:(()=>{const k=cs[n],g=k.h-k.l||1e-12;return long?(k.h-Math.max(k.o,k.c))/g:(Math.min(k.o,k.c)-k.l)/g})()}};
 }
 
 /* ---- skor fundamental 0-10 (searah dengan arah setup) ---- */
@@ -1211,6 +1213,24 @@ function fscore(s,dir){
   if(fng){if(L){if(fng.v>=45&&fng.v<=75)p+=.5;else if(fng.v>80)p-=.5}else{if(fng.v<=45)p+=.5;else if(fng.v<15)p-=.5}}
   return{score:Math.max(0,Math.min(10,p/(L?10.5:9.5)*10)),tags:t};
 }
+
+/* ---- gerbang "layak entry": semua syarat harus lolos ---- */
+function fin(a,s){
+  const f=fscore(s,a.dir),L=a.dir==='LONG',x=a.x,w=[],fx=fr[PERP(s)]*100;
+  a.fs=f?f.score:null;a.ftags=f?f.tags:[];
+  a.total=f?+(.65*a.tech+.35*f.score).toFixed(1):+a.tech.toFixed(1);
+  if(a.total<7)w.push('Skor total <7');
+  if(x.ht===(L?-1:1))w.push('Lawan tren TF besar');
+  if(x.bt===(L?-1:1))w.push('Lawan arah BTC');
+  if(x.adx<18)w.push('Tren lemah (ADX '+x.adx.toFixed(0)+')');
+  if(x.vr<1)w.push('Volume di bawah rata-rata');
+  if(x.ext>2.2)w.push('Harga sudah jauh dari EMA20');
+  if(L?x.rsi>72:x.rsi<28)w.push('RSI ekstrem');
+  if(x.wk>.55)w.push('Ekor candle menolak arah');
+  if(a.tp1p<.35)w.push('Target terlalu kecil vs biaya');
+  if(L?fx>.08:fx<-.08)w.push('Funding ekstrem');
+  a.why=w;a.ok=!w.length;return a}
+const fresh=c=>{const t=stat(c,px[c.s]||c.last);return t.r>-.3&&t.r<=.6&&!/^(SL|TP)/.test(t.t)};
 
 /* ---- format ---- */
 const fp=p=>{const d=p>=100?2:p>=1?4:p>=.01?5:8;return '$'+p.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d})};
@@ -1257,7 +1277,7 @@ const icon=c=>{const f=fund&&fund[c.s],u=f&&f.img?f.img:`https://assets.coincap.
   return `<div class="av" data-l="${c.s[0]}"><img src="${u}" alt="" loading="lazy" referrerpolicy="no-referrer"></div>`};
 const card=c=>{const p=px[c.s]||c.last,st=stat(c,p),tg=c.tags.map(t=>[t,'']).concat(c.ftags.map(t=>[t,'fd'])).slice(0,9);
   return `<article class="sc" data-s="${c.s}">
-  <div class="sc-h">${icon(c)}<div class="sc-n"><b>${c.s}/USDT</b><small>Timeframe ${tf.replace('h','j')}${fund&&fund[c.s]&&fund[c.s].rank?' · Rank #'+fund[c.s].rank:''}</small></div><span class="dir ${c.dir}">${c.dir}</span></div>
+  <div class="sc-h">${icon(c)}<div class="sc-n"><b>${c.s}/USDT</b><small>Timeframe ${tf.replace('h','j')}${fund&&fund[c.s]&&fund[c.s].rank?' · Rank #'+fund[c.s].rank:''}</small></div><span class="dir ${c.dir}">${c.dir}${c.ok?' · GAS':''}</span></div>
   <div class="sbs">${bar('Teknikal',c.tech)}${bar('Fundamental',c.fs)}${bar('Total',c.total,'tot')}</div>
   <div class="vd"><span>Kualitas setup: ${verdict(c.total)}</span><span>Candle live · ${tf.replace('h','j')}</span></div>
   <div class="cc">${candles(c)}</div>
@@ -1269,7 +1289,7 @@ const card=c=>{const p=px[c.s]||c.last,st=stat(c,p),tg=c.tags.map(t=>[t,'']).con
   </div>
   <div class="sc-l"><span>Live <span class="lp">${fp(p)}</span></span><span class="lr">${st.r>=0?'+':''}${st.r.toFixed(2)}R</span><span class="st ${st.k}">${st.t}</span></div>
   ${chips(c.s)}
-  <div class="tags">${tg.map((t,i)=>`<span class="${i?'':'sk'} ${t[1]}">${t[0]}</span>`).join('')}</div>
+  <div class="tags">${tg.map((t,i)=>`<span class="${i?'':'sk'} ${t[1]}">${t[0]}</span>`).join('')}${c.ok?'':(c.why||[]).map(w=>`<span class="rk">${w}</span>`).join('')}</div>
   <button type="button" class="dm-go" data-dm="c" data-sym="${c.s}" data-dir="${c.dir}" data-e="${c.entry}" data-sl="${c.sl}" data-t1="${c.tp1}" data-t2="${c.tp2}">Entry via Demo · ${c.dir}</button>
 </article>`};
 
@@ -1306,15 +1326,14 @@ async function analyzeCoin(s,silent){
   const cs=await kl(s,t);
   if(!isOpen||t!==tf||an[s]!==a)return;
   if(!cs||cs.length<60){a.busy=0;a.c=null;a.msg='';a.err=cs?`Data candle ${s} belum cukup untuk dianalisis (koin terlalu baru).`:`Candle ${s}/USDT belum bisa dimuat. Coba lagi sebentar.`;upd(s);return}
-  const [h]=await Promise.all([htf(s,t),loadFund([s]),loadFr(),loadFng()]);
+  const [h,,,,bt]=await Promise.all([htf(s,t),loadFund([s]),loadFr(),loadFng(),htf('BTC',t)]);
   if(!isOpen||t!==tf||an[s]!==a)return;
   store[s]=cs;px[s]=cs[cs.length-1].c;
-  const c=analyze(s,cs,h,undefined,1),tl=tf.replace('h','j');
+  const c=analyze(s,cs,h,undefined,1,bt),tl=tf.replace('h','j');
   a.busy=0;a.err='';a.c=null;a.msg='';
   if(!c)a.err=`Data ${s} belum cukup untuk dianalisis.`;
   else if(c.none)a.msg=`<b>Belum ada zona entry</b> untuk ${s}/USDT di ${tl}. Skor teknikal ${c.sc.toFixed(1)} dari 12 (butuh minimal 6). Kondisi: ${c.cond}. Coba timeframe lain; analisa diperbarui otomatis tiap menit.`;
-  else{const f=fscore(s,c.dir);c.fs=f?f.score:null;c.ftags=f?f.tags:[];
-    c.total=f?+(.65*c.tech+.35*f.score).toFixed(1):+c.tech.toFixed(1);
+  else{fin(c,s);
     if(c.total<5.5)a.msg=`<b>Belum ada zona entry</b> untuk ${s}/USDT di ${tl}. Teknikal condong ${c.dir} (${c.tech.toFixed(1)}/10), tetapi skor total ${c.total} masih di bawah 5.5 karena fundamental kurang mendukung. Tunggu konfirmasi lebih kuat.`;
     else a.c=c}
   upd(s);wsSync();
@@ -1327,9 +1346,9 @@ function render(){
   if(M()==='snp')return renderSn(1);
   if(M()==='all')return renderAll();
   if(res===null){meta.textContent='Gagal memuat data.';grid.innerHTML='<div class="scr-empty">Data pasar belum bisa dimuat.<br><button type="button" class="retry">Coba lagi</button></div>';return}
-  const list=res.filter(c=>flt==='all'||c.dir===flt);
-  meta.textContent=`${res.length} setup dari ${okN} koin · ${tf.replace('h','j')} · diperbarui ${at}`+(Object.keys(fund).length?'':' · fundamental tidak tersedia (skor teknikal saja)');
-  grid.innerHTML=list.length?list.map(card).join(''):'<div class="scr-empty">Belum ada koin yang kena screener di timeframe ini. Coba timeframe lain, atau buka tab Cari &amp; Analisa untuk cek koin tertentu.</div>';
+  const list=res.filter(c=>flt==='all'||(flt==='ok'?c.ok&&fresh(c):c.dir===flt));
+  meta.textContent=`${res.filter(c=>c.ok).length} layak entry · ${res.length} setup dari ${okN} koin · ${tf.replace('h','j')} · diperbarui ${at}`+(Object.keys(fund).length?'':' · fundamental tidak tersedia (skor teknikal saja)');
+  grid.innerHTML=list.length?list.map(card).join(''):`<div class="scr-empty">${flt==='ok'?'Belum ada koin yang lolos semua filter layak entry. Itu normal bila pasar belum memberi setup bersih; coba timeframe lain atau pilih Semua untuk melihat yang hampir lolos.':'Belum ada koin yang kena screener di timeframe ini. Coba timeframe lain.'}</div>`;
 }
 
 async function runAll(force){
@@ -1363,10 +1382,9 @@ async function run(force){
   await pool(cand,async x=>{x.h=await htf(x.c,t)},10);
   if(id!==tk||!isOpen)return;
   ok.forEach(x=>{store[x.c]=x.cs;if(!wsOn||!px[x.c])px[x.c]=x.cs[x.cs.length-1].c});
-  res=cand.map(x=>{const a=analyze(x.c,x.cs,x.h);if(!a)return null;
-      const f=fscore(x.c,a.dir);a.fs=f?f.score:null;a.ftags=f?f.tags:[];
-      a.total=f?+(.65*a.tech+.35*f.score).toFixed(1):+a.tech.toFixed(1);return a})
-    .filter(c=>c&&c.total>=5.5).sort((a,b)=>b.total-a.total||b.vr-a.vr).slice(0,80);
+  const bt=await htf('BTC',t);
+  res=cand.map(x=>{const a=analyze(x.c,x.cs,x.h,undefined,0,bt);return a&&fin(a,x.c)})
+    .filter(c=>c&&c.total>=5.5).sort((a,b)=>b.ok-a.ok||b.total-a.total||b.vr-a.vr).slice(0,80);
   at=clock();lastScan=Date.now();
   render();wsSync();
 }
@@ -1453,6 +1471,8 @@ window.openScrFor=s=>{md='all';q=s;qi.value=s;lim=60;mdSync();
   if(isOpen)switchMode();else openScr();
   analyzeCoin(s)};
 
+window.scrOpen=m=>{if(m!==md){md=m;mdSync();if(isOpen)switchMode()}if(!isOpen)openScr()};
+
 /* ===== SNIPER: pool baru di DEX (GeckoTerminal) + harga live tiap 5 detik (DexScreener). Skor dari data pasar, bukan candle ===== */
 const NET={'sol-pump':'solana',sol:'solana',base:'base',bsc:'bsc'};
 let snC='sol-pump',snF='all',snT=0,snP=0;const snp=new Map();
@@ -1464,17 +1484,20 @@ function gt(d){const a=d.attributes,r=d.relationships,v=a.volume_usd||{},pc=a.pr
   return{a:a.address,n:String(a.name||'?').split(' / ')[0].slice(0,24),tok:String(r.base_token.data.id).replace(/^[^_]+_/,''),dex:String(r.dex.data.id),t0:Date.parse(a.pool_created_at),
     p:N(a.base_token_price_usd),liq:N(a.reserve_in_usd),fdv:N(a.fdv_usd),v5:N(v.m5),v1:N(v.h1),c5:N(pc.m5),c1:N(pc.h1),b5:N(m5.buys),s5:N(m5.sells),b1:N(h1.buys),s1:N(h1.sells)}}
 function snScore(x){
-  const m=(Date.now()-x.t0)/6e4,n5=x.b5+x.s5,bp=n5?x.b5/n5:.5,to=x.liq>0?x.v5/x.liq:0,fl=[];let sc=0;
-  if(x.liq>=3e4)sc+=2;else if(x.liq>=1e4)sc+=1.5;else if(x.liq>=5e3)sc+=.8;else fl.push('Likuiditas tipis');
-  if(n5>=10){if(bp>=.6)sc+=2;else if(bp>=.5)sc+=1;else fl.push('Tekanan jual')}else fl.push('Transaksi sepi');
-  if(n5>=30)sc+=1.5;else if(n5>=10)sc+=.75;
+  const m=(Date.now()-x.t0)/6e4,n5=x.b5+x.s5,n1=x.b1+x.s1,bp=n5?x.b5/n5:.5,b1=n1?x.b1/n1:.5,to=x.liq>0?x.v5/x.liq:0,fl=[];let sc=0;
+  if(x.liq>=3e4)sc+=2;else if(x.liq>=1e4)sc+=1.5;else fl.push('Likuiditas tipis (<$10rb)');
+  if(n5>=15){if(bp>=.6)sc+=2;else if(bp>=.5)sc+=1;else fl.push('Tekanan jual')}else fl.push('Transaksi sepi');
+  if(n1>=50&&b1<.45)fl.push('Jual dominan 1 jam');
+  if(n5>=15&&!x.s5&&!x.s1)fl.push('Nol transaksi jual: curiga honeypot');
+  if(n5>=40)sc+=1.5;else if(n5>=15)sc+=.75;
   if(to>=.5)sc+=1.5;else if(to>=.2)sc+=.75;
-  if(x.c5>0&&x.c5<=60)sc+=1.5;else if(x.c5>60)fl.push('Sudah naik tinggi (5m +'+x.c5.toFixed(0)+'%)');else if(x.c5<-10)sc-=1;
-  if(x.c1>-20&&x.c1<=300)sc+=.75;
+  if(x.v5>0&&x.v5*12>=x.v1*1.2)sc+=1;
+  if(x.c5>0&&x.c5<=35)sc+=1.5;else if(x.c5>35)fl.push('Sudah lari (5m +'+x.c5.toFixed(0)+'%)');else if(x.c5<-10)sc-=1;
+  if(x.c1<-30)fl.push('Dump 1 jam ('+x.c1.toFixed(0)+'%)');else if(x.c1>150)fl.push('Sudah pump tinggi 1 jam');else if(x.c1>-20)sc+=.75;
   if(m<2)fl.push('Sangat baru (<2 mnt)');else if(m<=120)sc+=1.5;else if(m<=360)sc+=.5;
-  const fd=x.fdv&&x.liq&&x.fdv/x.liq>60?['FDV jauh di atas likuiditas']:[];
-  const s=Math.max(0,Math.min(10,sc/10.75*10));
-  return{sc:s,fl:fl.concat(fd),ok:s>=6&&!fl.length}}
+  if(x.fdv&&x.liq&&x.fdv/x.liq>40)fl.push('FDV jauh di atas likuiditas');
+  const s=Math.max(0,Math.min(10,sc/11.75*10));
+  return{sc:s,fl,ok:s>=6.5&&!fl.length}}
 const snView=()=>[...snp.values()].filter(x=>snC!=='sol-pump'||x.dex.startsWith('pump')).map(x=>(x.r=snScore(x),x))
   .filter(x=>snF==='all'||x.r.ok).sort((a,b)=>b.r.sc-a.r.sc||b.t0-a.t0).slice(0,40);
 function tokAv(x){
@@ -1654,7 +1677,8 @@ function setTab(t){
   tabs.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.t===t));
   if(t==='stock')startSt();else stopSt();
 }
-tabs.addEventListener('click',e=>{const b=e.target.closest('button');if(b)setTab(b.dataset.t)});
+tabs.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const t=b.dataset.t;
+  if(t==='scr'||t==='meme')return window.scrOpen&&scrOpen(t==='meme'?'snp':'set');setTab(t)});
 function openMk(t){
   if(window.setMenu)setMenu(false);
   mk.hidden=false;document.body.style.overflow='hidden';
