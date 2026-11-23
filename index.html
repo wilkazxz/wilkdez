@@ -617,8 +617,7 @@ addEventListener('resize',()=>{if(innerWidth>900)setMenu(false)});
 /* ===== ANTI ZOOM (pinch, double-tap, Ctrl+scroll, Ctrl +/-) ===== */
 ['gesturestart','gesturechange','gestureend'].forEach(t=>document.addEventListener(t,e=>e.preventDefault()));
 document.addEventListener('touchmove',e=>{if(e.touches.length>1)e.preventDefault()},{passive:false});
-let lastTap=0;
-document.addEventListener('touchend',e=>{const n=Date.now();if(n-lastTap<350)e.preventDefault();lastTap=n},{passive:false});
+/* double-tap zoom sudah dicegah CSS touch-action:manipulation. Handler touchend lama dihapus: ia menelan klik tombol (mis. Tutup posisi) bila 2 ketukan < 350 ms */
 document.addEventListener('wheel',e=>{if(e.ctrlKey)e.preventDefault()},{passive:false});
 document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&['+','-','=','0'].includes(e.key))e.preventDefault()});
 </script>
@@ -1294,7 +1293,7 @@ function chips(s){
 }
 const bar=(l,v,cl)=>`<div class="sb ${cl||''}"><small>${l}</small><b>${v==null?'—':v.toFixed(1)}</b><i><u style="width:${v==null?0:v*10}%"></u></i></div>`;
 const icon=c=>{const f=fund&&fund[c.s],u=f&&f.img?f.img:`https://assets.coincap.io/assets/icons/${c.s.toLowerCase()}@2x.png`;
-  return `<div class="av" data-l="${c.s[0]}"><img src="${u}" alt="" loading="lazy" referrerpolicy="no-referrer"></div>`};
+  return `<div class="av" data-l="${c.s[0]}" data-s="${c.s}"><img src="${u}" alt="" loading="lazy" referrerpolicy="no-referrer"></div>`};
 const card=c=>{const p=px[c.s]||c.last,st=stat(c,p),tg=c.tags.map(t=>[t,'']).concat(c.ftags.map(t=>[t,'fd'])).slice(0,9);
   return `<article class="sc${c.nw?' nw':''}" data-s="${c.s}">
   <div class="sc-h">${icon(c)}<div class="sc-n"><b>${c.s}/USDT</b><small>Timeframe ${tf.replace('h','j')}${fund&&fund[c.s]&&fund[c.s].rank?' · Rank #'+fund[c.s].rank:''}</small></div><span class="dir ${c.dir}">${c.dir}${c.ok?' · GAS':''}${c.nw?' · BARU':''}</span></div>
@@ -1466,7 +1465,7 @@ function closeScr(){
 }
 document.querySelectorAll('[data-scr]').forEach(b=>b.addEventListener('click',openScr));
 $('scrX').onclick=closeScr;
-document.addEventListener('keydown',e=>{if(e.key==='Escape'&&isOpen){e.preventDefault();closeScr()}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&isOpen&&!(window.WDDemo&&WDDemo.isOpen())){e.preventDefault();closeScr()}});
 $('scrRef').onclick=()=>run(1);
 const alB=$('scrAl'),alP=()=>{alB.textContent='Alert: '+(alOn?'ON':'OFF')};alP();
 alB.onclick=()=>{alOn=!alOn;try{localStorage.setItem('wd_scal',alOn?1:0)}catch(e){}alP()};
@@ -1526,11 +1525,12 @@ function snScore(x){
   if(x.fdv&&x.liq&&x.fdv/x.liq>40)fl.push('FDV jauh di atas likuiditas');
   const s=Math.max(0,Math.min(10,sc/11.75*10));
   return{sc:s,fl,ok:s>=6.5&&!fl.length}}
+window.SNS={gt,score:snScore,net:NET};
 const snView=()=>[...snp.values()].filter(x=>snC!=='sol-pump'||x.dex.startsWith('pump')).map(x=>(x.r=snScore(x),x))
   .filter(x=>snF==='all'||x.r.ok).sort((a,b)=>b.r.sc-a.r.sc||b.t0-a.t0).slice(0,40);
 function tokAv(x){
   const ch=NET[snC],p=x.img&&/^https:\/\//.test(x.img)&&!/missing/i.test(x.img)?x.img:'',d=`https://dd.dexscreener.com/ds-data/tokens/${ch}/${x.tok}.png`,a=p||d,f=p?d:'',L=esc(x.n[0]||'?');
-  return `<div class="av" data-l="${L}" data-k="${esc(a)}"><span class="lt">${L}</span><img src="${esc(a)}" data-f="${esc(f)}" alt="" loading="lazy" referrerpolicy="no-referrer" onload="var l=this.previousElementSibling;if(l)l.remove()" onerror="var f=this.dataset.f;if(f){this.dataset.f='';this.src=f}else this.remove()"></div>`}
+  return `<div class="av" data-l="${L}" data-k="${esc(a)}" data-ch="${ch}" data-tok="${esc(x.tok)}"><span class="lt">${L}</span><img src="${esc(a)}" data-f="${esc(f)}" alt="" loading="lazy" referrerpolicy="no-referrer" onload="var l=this.previousElementSibling;if(l)l.remove()" onerror="var f=this.dataset.f;if(f){this.dataset.f='';this.src=f}else this.remove()"></div>`}
 function dmBtn(x){const e=x.ent;return e?`<button type="button" class="dm-go" data-dm="d" data-chain="${NET[snC]}" data-tok="${esc(x.tok)}" data-sym="${esc(x.n)}" data-dir="LONG" data-e="${e}" data-sl="${e*.8}" data-t1="${e*1.3}" data-t2="${e*1.5}">Entry via Demo · LONG</button>`:''}
 function snIn(x){
   const r=x.r=snScore(x),m=(Date.now()-x.t0)/6e4,n5=x.b5+x.s5,bp=n5?Math.round(x.b5/n5*100):0;
@@ -2080,7 +2080,7 @@ function closeScr(){
 }
 document.querySelectorAll('[data-sscr]').forEach(b=>b.addEventListener('click',openScr));
 $('ssX').onclick=closeScr;
-document.addEventListener('keydown',e=>{if(e.key==='Escape'&&isOpen){e.preventDefault();closeScr()}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&isOpen&&!(window.WDDemo&&WDDemo.isOpen())){e.preventDefault();closeScr()}});
 $('ssRef').onclick=()=>run();
 grid.addEventListener('click',e=>{if(e.target.closest('.retry'))run()});
 grid.addEventListener('error',e=>{const im=e.target;if(im.tagName==='IMG'&&im.parentElement.classList.contains('av')){im.parentElement.textContent=im.parentElement.dataset.l}},true);
@@ -2147,7 +2147,9 @@ addEventListener('appinstalled',()=>{b.hidden=true;ev=null});
   .scr-top{gap:10px}
 }
 </style>
+<script src="icons.js"></script>
 <script src="demo.js"></script>
 <script src="listing.js"></script>
+<script src="autotrade.js"></script>
 </body>
 </html>
